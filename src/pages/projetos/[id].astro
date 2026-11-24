@@ -1,0 +1,235 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { projetosPublicados } from '../../data/projetos';
+
+export async function getStaticPaths() {
+  const projetos = await projetosPublicados();
+  return projetos.map((projeto) => ({ params: { id: projeto.id }, props: { projeto } }));
+}
+
+const { projeto } = Astro.props;
+const { titulo, resumo, data, tags, status, capa, links, downloads } = projeto.data;
+const { Content } = await render(projeto);
+
+const nomesPlataforma: Record<string, string> = {
+  windows: 'Windows',
+  macos: 'macOS',
+  linux: 'Linux',
+  android: 'Android',
+  ios: 'iOS',
+  web: 'Web',
+  outro: 'Arquivo',
+};
+const dataFormatada = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const externo = (url: string) => /^https?:\/\//.test(url);
+---
+
+<Base titulo={titulo} descricao={resumo}>
+  <article>
+    <div class="container estreito">
+      <a href="/projetos" class="voltar muted">← Projetos</a>
+
+      <header>
+        <h1>{titulo}</h1>
+        <p class="lead muted">{resumo}</p>
+        <div class="meta">
+          <span class="muted mono">{dataFormatada}</span>
+          {status !== 'ativo' && <span class="tag">{status}</span>}
+          {tags.map((t) => <a href={`/projetos?tag=${encodeURIComponent(t)}`} class="tag">{t}</a>)}
+        </div>
+      </header>
+
+      {capa && <img class="capa" src={capa} alt={`Imagem de ${titulo}`} />}
+
+      {
+        (links.length > 0 || downloads.length > 0) && (
+          <div class="painel">
+            {links.length > 0 && (
+              <div>
+                <h2>Acessar</h2>
+                <div class="botoes">
+                  {links.map((l, i) => (
+                    <a
+                      href={l.url}
+                      class={i === 0 ? 'btn btn-primary' : 'btn'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {l.rotulo} ↗
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {downloads.length > 0 && (
+              <div>
+                <h2>Downloads</h2>
+                <ul class="downloads">
+                  {downloads.map((d) => (
+                    <li>
+                      <a
+                        href={d.url}
+                        {...(externo(d.url)
+                          ? { target: '_blank', rel: 'noopener noreferrer' }
+                          : { download: '' })}
+                      >
+                        <span class="plataforma mono">{nomesPlataforma[d.plataforma]}</span>
+                        <span class="rotulo">{d.rotulo}</span>
+                        <span class="detalhes muted mono">
+                          {[d.versao && `v${d.versao}`, d.tamanho].filter(Boolean).join(' · ')}
+                        </span>
+                        <span aria-hidden="true">↓</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )
+      }
+
+      <div class="conteudo">
+        <Content />
+      </div>
+    </div>
+  </article>
+</Base>
+
+<style>
+  article {
+    padding: 40px 0 72px;
+  }
+  .estreito {
+    max-width: 760px;
+  }
+  .voltar {
+    display: inline-block;
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 2.8rem);
+  }
+  .lead {
+    font-size: 1.1rem;
+    margin: 0 0 16px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+  .meta a.tag {
+    text-decoration: none;
+  }
+  .capa {
+    width: 100%;
+    margin-top: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .painel {
+    margin-top: 32px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: grid;
+    gap: 24px;
+  }
+  .painel h2 {
+    font-size: 0.8rem;
+    font-family: var(--mono);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .botoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .downloads {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .downloads a {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    text-decoration: none;
+  }
+  .downloads a:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .plataforma {
+    font-size: 0.75rem;
+    color: var(--accent);
+    min-width: 4.5em;
+  }
+  .detalhes {
+    font-size: 0.75rem;
+  }
+  @media (max-width: 480px) {
+    .downloads a {
+      grid-template-columns: 1fr auto;
+    }
+    .plataforma,
+    .detalhes {
+      grid-column: 1;
+    }
+    .downloads a > span:last-child {
+      grid-row: 1 / span 3;
+      grid-column: 2;
+    }
+  }
+  .conteudo {
+    margin-top: 40px;
+    font-size: 1.05rem;
+  }
+  .conteudo :global(h2) {
+    font-size: 1.4rem;
+    margin-top: 2em;
+  }
+  .conteudo :global(p),
+  .conteudo :global(li) {
+    color: #c9cdd5;
+  }
+  .conteudo :global(code) {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--surface-2);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+  .conteudo :global(pre) {
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+  }
+  .conteudo :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+  .conteudo :global(img) {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+</style>

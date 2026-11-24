@@ -1,0 +1,89 @@
+---
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { site } from '../data/site';
+import { projetosPublicados } from '../data/projetos';
+
+const projetos = await projetosPublicados();
+const destaques = projetos.filter((p) => p.data.destaque).slice(0, 3);
+const vitrine = destaques.length > 0 ? destaques : projetos.slice(0, 3);
+---
+
+<Base>
+  <section class="hero">
+    <div class="container">
+      <p class="eyebrow">// olá, eu sou</p>
+      <h1>{site.nome}</h1>
+      <p class="lead muted">{site.bio}</p>
+      <div class="cta">
+        <a href="/projetos" class="btn btn-primary">Ver projetos</a>
+        {
+          site.redes[0] && (
+            <a href={site.redes[0].url} class="btn" target="_blank" rel="noopener noreferrer">
+              {site.redes[0].nome} ↗
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="destaques">
+    <div class="container">
+      <div class="titulo-secao">
+        <h2>Em destaque</h2>
+        <a href="/projetos" class="muted">Todos os {projetos.length} projetos →</a>
+      </div>
+      {
+        vitrine.length > 0 ? (
+          <div class="grid">
+            {vitrine.map((p) => (
+              <ProjectCard projeto={p} />
+            ))}
+          </div>
+        ) : (
+          <p class="muted">Nenhum projeto publicado ainda.</p>
+        )
+      }
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    padding: 88px 0 48px;
+  }
+  h1 {
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    margin-bottom: 0.3em;
+  }
+  .lead {
+    font-size: 1.15rem;
+    max-width: 38rem;
+    margin: 0 0 2rem;
+  }
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .destaques {
+    padding-top: 24px;
+  }
+  .titulo-secao {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .titulo-secao h2 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+  .titulo-secao a {
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+</style>

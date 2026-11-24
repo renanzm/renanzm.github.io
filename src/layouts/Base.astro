@@ -1,0 +1,129 @@
+---
+import '../styles/global.css';
+import { site } from '../data/site';
+
+interface Props {
+  titulo?: string;
+  descricao?: string;
+}
+
+const { titulo, descricao = site.bio } = Astro.props;
+const tituloCompleto = titulo ? `${titulo} · ${site.nome}` : `${site.nome} · ${site.cargo}`;
+const caminho = Astro.url.pathname;
+const ativo = (href: string) => (href === '/' ? caminho === '/' : caminho.startsWith(href));
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{tituloCompleto}</title>
+    <meta name="description" content={descricao} />
+    <meta property="og:title" content={tituloCompleto} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0b0c0f" />
+  </head>
+  <body>
+    <header class="topo">
+      <nav class="container nav" aria-label="Principal">
+        <a href="/" class="marca mono">{site.nome.toLowerCase()}<span>.</span></a>
+        <ul>
+          <li><a href="/" aria-current={ativo('/') ? 'page' : undefined}>Início</a></li>
+          <li>
+            <a href="/projetos" aria-current={ativo('/projetos') ? 'page' : undefined}>Projetos</a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="rodape">
+      <div class="container rodape-inner">
+        <span class="muted">© {new Date().getFullYear()} {site.nome}</span>
+        <ul>
+          {
+            site.redes.map((r) => (
+              <li>
+                <a href={r.url} target="_blank" rel="noopener noreferrer">
+                  {r.nome}
+                </a>
+              </li>
+            ))
+          }
+          {site.email && (
+            <li>
+              <a href={`mailto:${site.email}`}>E-mail</a>
+            </li>
+          )}
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .topo {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgb(11 12 15 / 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .marca {
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .marca span {
+    color: var(--accent);
+  }
+  ul {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav ul a {
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .nav ul a:hover,
+  .nav ul a[aria-current='page'] {
+    color: var(--text);
+  }
+  main {
+    min-height: calc(100vh - 60px - 81px);
+  }
+  .rodape {
+    border-top: 1px solid var(--border);
+    padding: 28px 0;
+    font-size: 0.9rem;
+  }
+  .rodape-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+  }
+  .rodape a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .rodape a:hover {
+    color: var(--text);
+  }
+</style>

@@ -1,0 +1,110 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { projetosPublicados } from '../../data/projetos';
+
+const projetos = await projetosPublicados();
+const tags = [...new Set(projetos.flatMap((p) => p.data.tags))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+---
+
+<Base titulo="Projetos" descricao="Todos os meus apps, jogos e ferramentas, com links e downloads.">
+  <section>
+    <div class="container">
+      <p class="eyebrow">// hub</p>
+      <h1>Projetos</h1>
+      <p class="muted intro">Apps, jogos e ferramentas que construí. Abra um projeto para ver os links e downloads.</p>
+
+      {
+        tags.length > 0 && (
+          <div class="filtros" role="group" aria-label="Filtrar por tag">
+            <button type="button" class="filtro" data-tag="" aria-pressed="true">
+              todos
+            </button>
+            {tags.map((t) => (
+              <button type="button" class="filtro" data-tag={t} aria-pressed="false">
+                {t}
+              </button>
+            ))}
+          </div>
+        )
+      }
+
+      <div class="grid" id="lista">
+        {projetos.map((p) => <ProjectCard projeto={p} />)}
+      </div>
+      <p class="muted vazio" id="vazio" hidden>Nenhum projeto com essa tag.</p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const botoes = document.querySelectorAll<HTMLButtonElement>('.filtro');
+  const cards = document.querySelectorAll<HTMLElement>('#lista .card');
+  const vazio = document.getElementById('vazio');
+
+  function aplicar(tag: string) {
+    let visiveis = 0;
+    cards.forEach((card) => {
+      const ok = !tag || (card.dataset.tags ?? '').split(',').includes(tag);
+      card.hidden = !ok;
+      if (ok) visiveis++;
+    });
+    botoes.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tag === tag)));
+    if (vazio) vazio.hidden = visiveis > 0;
+  }
+
+  botoes.forEach((b) =>
+    b.addEventListener('click', () => {
+      const tag = b.dataset.tag ?? '';
+      aplicar(tag);
+      const url = new URL(location.href);
+      if (tag) url.searchParams.set('tag', tag);
+      else url.searchParams.delete('tag');
+      history.replaceState(null, '', url);
+    }),
+  );
+
+  const inicial = new URLSearchParams(location.search).get('tag');
+  if (inicial) aplicar(inicial);
+</script>
+
+<style>
+  h1 {
+    font-size: clamp(2rem, 6vw, 3rem);
+  }
+  .intro {
+    margin: 0 0 28px;
+    max-width: 40rem;
+  }
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .filtro {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.35em 0.85em;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .filtro:hover {
+    color: var(--text);
+  }
+  .filtro[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .vazio {
+    margin-top: 16px;
+  }
+  :global(.card[hidden]) {
+    display: none;
+  }
+</style>
