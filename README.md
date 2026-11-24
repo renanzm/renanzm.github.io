@@ -70,5 +70,21 @@ Configuração (uma vez só):
 Para usar um endereço como `renanzm.dev`:
 
 1. Compre o domínio num registrador (Cloudflare, Porkbun, Namecheap...).
-2. Em **Settings › Pages › Custom domain**, digite o domínio e siga as instruções de DNS do GitHub.
-3. Troque `site` no `astro.config.mjs` para o novo endereço e crie `public/CNAME` contendo só o domínio.
+2. No DNS do domínio, crie estes registros (no Cloudflare, deixe a nuvem **cinza**, "DNS only"):
+
+   | Tipo | Nome | Valor |
+   |---|---|---|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | AAAA | `@` | `2606:50c0:8000::153` |
+   | AAAA | `@` | `2606:50c0:8001::153` |
+   | AAAA | `@` | `2606:50c0:8002::153` |
+   | AAAA | `@` | `2606:50c0:8003::153` |
+   | CNAME | `www` | `renanzm.github.io` |
+
+3. Em **Settings › Pages › Custom domain**, digite o domínio, salve e marque **Enforce HTTPS** quando o certificado ficar pronto.
+4. Troque `site` no `astro.config.mjs` para o novo endereço.
+
+Com deploy pelo GitHub Actions, o arquivo `CNAME` não é usado: o domínio fica só nas configurações do repositório. Configure o domínio no GitHub **depois** que o DNS estiver apontando, porque a partir daí o endereço `renanzm.github.io` passa a redirecionar para ele.
