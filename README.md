@@ -1,6 +1,6 @@
 # my-site
 
-Portfólio e hub de apps feito com [Astro](https://astro.build), publicado na Vercel.
+Portfólio e hub de apps feito com [Astro](https://astro.build), publicado no GitHub Pages em https://renanzm.github.io.
 
 ## Rodar localmente
 
@@ -48,10 +48,27 @@ Texto livre em Markdown com a descrição completa do projeto.
 - **Arquivos grandes (builds, instaladores, APKs):** use o GitHub Releases do repositório do app e cole o link aqui. É grátis, tem controle de versão e não pesa no deploy do site.
 - **Arquivos pequenos (poucos MB):** coloque em `public/downloads/` e use `url: /downloads/arquivo.zip`.
 
-## Publicar na Vercel
+## Publicar no GitHub Pages
 
-1. Suba este repositório no GitHub.
-2. Em [vercel.com/new](https://vercel.com/new), importe o repositório. A Vercel detecta o Astro sozinha.
-3. Depois do primeiro deploy, coloque a URL final em `site` no `astro.config.mjs`.
+O workflow em `.github/workflows/deploy.yml` gera e publica o site a cada `git push` na `main`.
 
-Cada `git push` na branch `main` publica uma nova versão.
+Configuração (uma vez só):
+
+1. Crie no GitHub um repositório público chamado **`renanzm.github.io`**. Esse nome faz o site abrir na raiz do endereço.
+2. Envie este projeto para ele:
+
+   ```powershell
+   git remote add origin https://github.com/renanzm/renanzm.github.io.git
+   git push -u origin main
+   ```
+
+3. No repositório, vá em **Settings › Pages** e, em **Source**, escolha **GitHub Actions**.
+4. Acompanhe o deploy na aba **Actions**. Em um ou dois minutos o site está no ar.
+
+### Domínio próprio (opcional)
+
+Para usar um endereço como `renanzm.dev`:
+
+1. Compre o domínio num registrador (Cloudflare, Porkbun, Namecheap...).
+2. Em **Settings › Pages › Custom domain**, digite o domínio e siga as instruções de DNS do GitHub.
+3. Troque `site` no `astro.config.mjs` para o novo endereço e crie `public/CNAME` contendo só o domínio.

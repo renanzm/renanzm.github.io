@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  // Troque pela URL final do site depois do primeiro deploy na Vercel
-  site: 'https://my-site.vercel.app',
+  // GitHub Pages: o repositório precisa se chamar renanzm.github.io.
+  // Se um dia usar domínio próprio (ex.: renanzm.dev), troque aqui.
+  site: 'https://renanzm.github.io',
 });
