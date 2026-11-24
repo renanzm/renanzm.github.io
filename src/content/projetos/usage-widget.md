@@ -1,10 +1,22 @@
 ---
 titulo: Usage Widget
-resumo: Widget para a área de trabalho do Windows que mostra o gasto e os limites do plano no Claude Code, no Codex e no Cursor.
+resumo: Widget para o Windows com o gasto e os limites do Claude Code, do Codex e do Cursor.
+descricao: Fica na borda da tela como uma abinha e, ao passar o mouse, abre um painel com o ritmo de gasto, os limites do plano e a projeção do mês. Tudo roda na sua máquina.
+destaques:
+  - Limites de 5 horas e da semana, com o tempo até zerar
+  - Velocímetro do gasto em dólares por hora
+  - Alertas do Windows quando o ritmo sobe
+stack: [Rust, Tauri, JavaScript]
+plataforma: Windows
 data: 2026-11-24
-tags: [windows, rust, desktop, ia]
-destaque: true
-capa: /capas/usage-widget.png
+ordem: 2
+cor: '#34d399'
+capa: ../../assets/projetos/usage-widget.png
+galeria:
+  - src: ../../assets/projetos/usage-widget.png
+    legenda: Tema escuro
+  - src: ../../assets/projetos/usage-widget-claro.png
+    legenda: Tema claro
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/cursor-usage-widget

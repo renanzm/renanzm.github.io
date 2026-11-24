@@ -1,9 +1,17 @@
 ---
 titulo: RZ Airsoft
 resumo: Sistema de gestão para oficina de airsoft, com ordens de serviço, quadro da bancada, relatórios técnicos em PDF e clientes.
+descricao: Feito sob medida para a oficina RZ Airsoft. Roda no computador da oficina, abre de qualquer lugar pelo navegador e continua funcionando sem internet, sincronizando quando a conexão volta.
+destaques:
+  - Quadro da bancada para arrastar cada ordem de serviço
+  - Relatório técnico em PDF com fotos e FPS antes e depois
+  - Funciona offline e junta edições feitas em dois aparelhos
+stack: [JavaScript, Python, PWA]
+plataforma: Web
 data: 2026-11-02
-tags: [web, javascript, python, gestão]
-capa: /capas/rz-airsoft.png
+ordem: 4
+cor: '#eab308'
+capa: ../../assets/projetos/rz-airsoft.png
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/rz-airsoft

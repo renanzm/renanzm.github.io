@@ -1,89 +1,417 @@
 ---
 import Base from '../layouts/Base.astro';
-import ProjectCard from '../components/ProjectCard.astro';
+import ProjetoVitrine from '../components/ProjetoVitrine.astro';
 import { site } from '../data/site';
 import { projetosPublicados } from '../data/projetos';
 
 const projetos = await projetosPublicados();
-const destaques = projetos.filter((p) => p.data.destaque).slice(0, 3);
-const vitrine = destaques.length > 0 ? destaques : projetos.slice(0, 3);
+const vitrine = projetos.filter((p) => p.data.status !== 'arquivado');
+const arquivados = projetos.filter((p) => p.data.status === 'arquivado');
+const [github, linkedin] = site.redes;
+const dois = (n: number) => String(n).padStart(2, '0');
 ---
 
 <Base>
   <section class="hero">
     <div class="container">
-      <p class="eyebrow">// olá, eu sou</p>
+      <p class="rotulo">{site.cargo} · {site.cidade}</p>
       <h1>{site.nome}</h1>
-      <p class="lead muted">{site.bio}</p>
-      <div class="cta">
-        <a href="/projetos" class="btn btn-primary">Ver projetos</a>
-        {
-          site.redes[0] && (
-            <a href={site.redes[0].url} class="btn" target="_blank" rel="noopener noreferrer">
-              {site.redes[0].nome} ↗
+      <p class="chamada">{site.chamada}</p>
+      <div class="acoes">
+        <a class="btn btn-solido" href="#projetos">Ver projetos <span aria-hidden="true">↓</span></a>
+        <a class="btn" href={linkedin.url} target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>
+        <a class="btn" href={github.url} target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+    <a class="rolar mono" href="#projetos" tabindex="-1" aria-hidden="true">
+      role para ver os projetos <span>↓</span>
+    </a>
+  </section>
+
+  <div id="projetos">
+    <h2 class="sr-only">Projetos</h2>
+    {vitrine.map((projeto, i) => <ProjetoVitrine projeto={projeto} indice={i} total={vitrine.length} />)}
+  </div>
+
+  <nav class="trilha" aria-label="Atalhos para os projetos">
+    <ol>
+      {
+        vitrine.map((p, i) => (
+          <li>
+            <a href={`#${p.id}`} data-alvo={p.id} style={`--c: ${p.data.cor}`}>
+              <span class="nome">{p.data.titulo}</span>
+              <span class="num">{dois(i + 1)}</span>
+              <span class="traco" />
             </a>
-          )
-        }
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
+
+  {
+    arquivados.length > 0 && (
+      <div class="container arquivo">
+        <span class="rotulo">Arquivo</span>
+        {arquivados.map((p) => (
+          <a href={`/projetos/${p.id}`}>
+            {p.data.titulo}
+            <span class="muted"> · {p.data.resumo}</span>
+          </a>
+        ))}
+        <a href="/projetos" class="indice">
+          Índice de projetos <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    )
+  }
+
+  <section id="sobre" class="sobre">
+    <div class="container">
+      <p class="rotulo">Sobre</p>
+      <h2 class="declaracao">Do Windows 98 a migrações de dados em produção.</h2>
+      <div class="sobre-grade">
+        <div class="bio">
+          {site.bio.map((paragrafo) => <p>{paragrafo}</p>)}
+        </div>
+        <dl class="fatos">
+          {
+            site.fatos.map((f) => (
+              <div>
+                <dt class="rotulo">{f.rotulo}</dt>
+                <dd>{f.valor}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+
+      <div class="stack">
+        <p class="rotulo">Stack</p>
+        <ul class="icones">
+          {
+            site.stack.map((s) => (
+              <li>
+                <img src={`/stack/${s.id}.svg`} alt="" width="44" height="44" loading="lazy" />
+                <span>{s.nome}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <ul class="extras">
+          {site.extras.map((e) => <li class="chip">{e}</li>)}
+        </ul>
       </div>
     </div>
   </section>
 
-  <section class="destaques">
+  <section id="contato" class="contato">
     <div class="container">
-      <div class="titulo-secao">
-        <h2>Em destaque</h2>
-        <a href="/projetos" class="muted">Todos os {projetos.length} projetos →</a>
+      <h2>Vamos conversar?</h2>
+      <p class="muted">Se algum projeto te ajudou ou você quer trocar uma ideia, me chame no LinkedIn.</p>
+      <div class="acoes">
+        <a class="btn btn-solido" href={linkedin.url} target="_blank" rel="noopener noreferrer">Falar no LinkedIn <span aria-hidden="true">↗</span></a>
+        <a class="btn" href={github.url} target="_blank" rel="noopener noreferrer">Ver o GitHub <span aria-hidden="true">↗</span></a>
       </div>
-      {
-        vitrine.length > 0 ? (
-          <div class="grid">
-            {vitrine.map((p) => (
-              <ProjectCard projeto={p} />
-            ))}
-          </div>
-        ) : (
-          <p class="muted">Nenhum projeto publicado ainda.</p>
-        )
-      }
     </div>
   </section>
 </Base>
 
+<script>
+  const trilha = document.querySelector<HTMLElement>('.trilha');
+  const area = document.getElementById('projetos');
+  const links = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('.trilha a')].map((a) => [a.dataset.alvo, a]),
+  );
+
+  // Marca na trilha a seção que está no meio da tela
+  const secoes = new IntersectionObserver(
+    (entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue;
+        links.forEach((a) => a.removeAttribute('aria-current'));
+        links.get(e.target.id)?.setAttribute('aria-current', 'true');
+      }
+    },
+    { rootMargin: '-50% 0px -50% 0px' },
+  );
+  document.querySelectorAll('[data-vitrine]').forEach((s) => secoes.observe(s));
+
+  // A trilha só aparece enquanto os projetos estão na tela
+  if (trilha && area) {
+    new IntersectionObserver(([e]) => trilha.classList.toggle('visivel', e.isIntersecting), {
+      rootMargin: '-45% 0px -45% 0px',
+    }).observe(area);
+  }
+</script>
+
 <style>
+  :global(html) {
+    scroll-snap-type: y proximity;
+  }
+
   .hero {
-    padding: 88px 0 48px;
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: calc(var(--header) + 56px) 0 112px;
+    overflow: clip;
   }
-  h1 {
-    font-size: clamp(2.5rem, 8vw, 4.5rem);
-    margin-bottom: 0.3em;
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(60% 55% at 25% 45%, #000 10%, transparent 75%);
+    -webkit-mask-image: radial-gradient(60% 55% at 25% 45%, #000 10%, transparent 75%);
+    opacity: 0.55;
+    pointer-events: none;
   }
-  .lead {
-    font-size: 1.15rem;
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 70vmax;
+    height: 70vmax;
+    left: -25vmax;
+    top: -30vmax;
+    background: radial-gradient(closest-side, rgb(125 211 168 / 0.13), transparent);
+    pointer-events: none;
+  }
+  .hero .container {
+    position: relative;
+    z-index: 1;
+  }
+  .hero h1 {
+    margin: 18px 0 28px;
+    font-size: clamp(3.4rem, 11.5vw, 8.75rem);
+    line-height: 0.92;
+    letter-spacing: -0.055em;
+  }
+  .chamada {
     max-width: 38rem;
-    margin: 0 0 2rem;
+    margin: 0 0 36px;
+    font-size: clamp(1.15rem, 2vw, 1.45rem);
+    line-height: 1.5;
+    color: var(--text-2);
   }
-  .cta {
+  .acoes {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
-  .destaques {
-    padding-top: 24px;
-  }
-  .titulo-secao {
+  .rolar {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
     display: flex;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-decoration: none;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .rolar span {
+    animation: quicar 1.8s ease-in-out infinite;
+  }
+  @keyframes quicar {
+    50% {
+      transform: translateY(4px);
+    }
+  }
+
+  .trilha {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    z-index: 40;
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .trilha.visivel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .trilha ol {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .trilha a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    height: 24px;
+    color: var(--muted);
+    font: 400 0.72rem/1 var(--mono);
+    text-decoration: none;
+  }
+  .trilha .nome {
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: rgb(9 9 11 / 0.85);
+    color: var(--text);
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap;
+  }
+  .trilha .traco {
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line-2);
+    transition: width 0.25s, background 0.25s;
+  }
+  .trilha a:hover .nome,
+  .trilha a:focus-visible .nome {
+    opacity: 1;
+    transform: none;
+  }
+  .trilha a[aria-current] {
+    color: var(--text);
+  }
+  .trilha a[aria-current] .traco {
+    width: 28px;
+    background: var(--c);
+    box-shadow: 0 0 8px var(--c);
+  }
+  @media (max-width: 1279px) {
+    .trilha {
+      display: none;
+    }
+  }
+
+  .arquivo {
+    display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    justify-content: space-between;
+    gap: 10px 24px;
+    padding-top: 28px;
+    padding-bottom: 28px;
+    border-top: 1px solid var(--line);
+    font-size: 0.92rem;
+  }
+  .arquivo a {
+    text-decoration: none;
+  }
+  .arquivo a:hover .muted {
+    color: var(--text-2);
+  }
+  .arquivo .indice {
+    margin-left: auto;
+    color: var(--text-2);
+  }
+
+  .sobre {
+    padding: 120px 0 96px;
+    border-top: 1px solid var(--line);
+  }
+  .declaracao {
+    max-width: 18ch;
+    margin: 18px 0 56px;
+    font-size: clamp(2.3rem, 5.6vw, 4.25rem);
+  }
+  .sobre-grade {
+    display: grid;
+    gap: 48px;
+  }
+  @media (min-width: 960px) {
+    .sobre-grade {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+      gap: 80px;
+    }
+  }
+  .bio p {
+    margin: 0 0 1.2em;
+    font-size: 1.08rem;
+    line-height: 1.75;
+    color: var(--text-2);
+  }
+  .bio p:first-child {
+    color: var(--text);
+  }
+  .fatos {
+    display: grid;
+    align-content: start;
+    gap: 0;
+    margin: 0;
+  }
+  .fatos div {
+    display: grid;
+    gap: 4px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .fatos div:first-child {
+    border-top: 1px solid var(--line);
+  }
+  .fatos dd {
+    margin: 0;
+  }
+
+  .stack {
+    margin-top: 72px;
+  }
+  .icones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px;
+    margin: 18px 0 20px;
+    padding: 0;
+    list-style: none;
+  }
+  .icones li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    font-size: 0.8rem;
+    color: var(--text-2);
+    text-align: center;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .icones li:hover {
+    border-color: var(--line-2);
+    transform: translateY(-2px);
+  }
+  .extras {
+    display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 20px;
-  }
-  .titulo-secao h2 {
     margin: 0;
-    font-size: 1.4rem;
+    padding: 0;
+    list-style: none;
   }
-  .titulo-secao a {
-    text-decoration: none;
-    font-size: 0.95rem;
+
+  .contato {
+    padding: 120px 0;
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+  .contato h2 {
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+  }
+  .contato p {
+    margin: 18px auto 32px;
+    max-width: 32rem;
+    font-size: 1.05rem;
+  }
+  .contato .acoes {
+    justify-content: center;
   }
 </style>

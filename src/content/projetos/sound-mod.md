@@ -1,10 +1,13 @@
 ---
 titulo: Sound Mod (Python)
 resumo: A primeira versão do soundboard, em Python. Substituída pela versão em Rust.
+stack: [Python, customtkinter]
+plataforma: Windows
 data: 2026-11-02
-tags: [windows, python, áudio, desktop]
+ordem: 90
+cor: '#94a3b8'
 status: arquivado
-capa: /capas/sound-mod.png
+capa: ../../assets/projetos/sound-mod.png
 links:
   - rotulo: Ver a versão nova
     url: https://github.com/renanzm/sound-mod-rs

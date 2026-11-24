@@ -13,22 +13,32 @@ Abra http://localhost:4321.
 
 ## Editar suas informações
 
-Nome, bio e redes sociais ficam em `src/data/site.ts`.
+Nome, bio, stack e redes sociais ficam em `src/data/site.ts`. Os ícones do stack são da [skill-icons](https://github.com/tandpfun/skill-icons) (licença MIT) e ficam em `public/stack/`.
 
 ## Adicionar um projeto
 
-Crie um arquivo `.md` em `src/content/projetos/`. O nome do arquivo vira o endereço da página (`meu-app.md` → `/projetos/meu-app`).
+Crie um arquivo `.md` em `src/content/projetos/`. O nome do arquivo vira o endereço da página (`meu-app.md` → `/projetos/meu-app`). Cada projeto não arquivado ganha uma seção de tela cheia na página inicial, na ordem do campo `ordem`.
 
 ```md
 ---
 titulo: Meu App
 resumo: Uma frase sobre o que ele faz.
+descricao: Parágrafo curto mostrado na seção da página inicial.
+destaques:              # até 4 pontos fortes
+  - Primeiro ponto forte
+  - Segundo ponto forte
+stack: [Rust, Tauri]
+plataforma: Windows
 data: 2026-11-24
-tags: [web, ferramenta]
-destaque: true          # aparece na página inicial (máx. 3)
-status: ativo           # ativo | beta | arquivado
+ordem: 7                # posição na página inicial (menor vem primeiro)
+cor: '#38bdf8'          # cor de destaque da seção
+status: ativo           # ativo | beta | em-desenvolvimento | arquivado
+teaser: false           # true = sneak peek, sem links nem downloads
 rascunho: false         # true esconde o projeto do site
-capa: /capas/meu-app.png   # opcional, arquivo em public/capas/
+capa: ../../assets/projetos/meu-app.png   # imagem em src/assets/
+galeria:
+  - src: ../../assets/projetos/meu-app-2.png
+    legenda: Outra tela
 links:
   - rotulo: Abrir app
     url: https://meu-app.vercel.app

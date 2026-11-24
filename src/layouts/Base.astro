@@ -1,16 +1,20 @@
 ---
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
 import '../styles/global.css';
 import { site } from '../data/site';
 
 interface Props {
   titulo?: string;
   descricao?: string;
+  /** URL de imagem para redes sociais (absoluta ou relativa ao site) */
+  imagem?: string;
 }
 
-const { titulo, descricao = site.bio } = Astro.props;
+const { titulo, descricao = site.descricao, imagem } = Astro.props;
 const tituloCompleto = titulo ? `${titulo} · ${site.nome}` : `${site.nome} · ${site.cargo}`;
-const caminho = Astro.url.pathname;
-const ativo = (href: string) => (href === '/' ? caminho === '/' : caminho.startsWith(href));
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const imagemAbs = imagem ? new URL(imagem, Astro.site).href : undefined;
 ---
 
 <!doctype html>
@@ -20,26 +24,32 @@ const ativo = (href: string) => (href === '/' ? caminho === '/' : caminho.starts
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{tituloCompleto}</title>
     <meta name="description" content={descricao} />
+    <link rel="canonical" href={canonical} />
     <meta property="og:title" content={tituloCompleto} />
     <meta property="og:description" content={descricao} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    {imagemAbs && <meta property="og:image" content={imagemAbs} />}
+    <meta name="twitter:card" content={imagemAbs ? 'summary_large_image' : 'summary'} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="theme-color" content="#0b0c0f" />
+    <meta name="theme-color" content="#09090b" />
   </head>
   <body>
+    <a href="#conteudo" class="pular">Pular para o conteúdo</a>
     <header class="topo">
       <nav class="container nav" aria-label="Principal">
-        <a href="/" class="marca mono">{site.nome.toLowerCase()}<span>.</span></a>
+        <a href="/" class="marca mono" aria-label={`${site.nome}, início`}>{site.apelido}<span>.</span></a>
         <ul>
-          <li><a href="/" aria-current={ativo('/') ? 'page' : undefined}>Início</a></li>
+          <li><a href="/#projetos">Projetos</a></li>
+          <li><a href="/#sobre">Sobre</a></li>
           <li>
-            <a href="/projetos" aria-current={ativo('/projetos') ? 'page' : undefined}>Projetos</a>
+            <a href={site.redes[0].url} target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true"> ↗</span></a>
           </li>
         </ul>
       </nav>
     </header>
 
-    <main>
+    <main id="conteudo">
       <slot />
     </main>
 
@@ -47,6 +57,7 @@ const ativo = (href: string) => (href === '/' ? caminho === '/' : caminho.starts
       <div class="container rodape-inner">
         <span class="muted">© {new Date().getFullYear()} {site.nome}</span>
         <ul>
+          <li><a href="/projetos">Índice de projetos</a></li>
           {
             site.redes.map((r) => (
               <li>
@@ -68,55 +79,78 @@ const ativo = (href: string) => (href === '/' ? caminho === '/' : caminho.starts
 </html>
 
 <style>
+  .pular {
+    position: absolute;
+    left: 16px;
+    top: -60px;
+    z-index: 100;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--text);
+    color: var(--bg);
+    text-decoration: none;
+  }
+  .pular:focus {
+    top: 12px;
+  }
   .topo {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: rgb(11 12 15 / 0.8);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    height: var(--header);
+    background: rgb(9 9 11 / 0.72);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid var(--line);
   }
   .nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 60px;
+    height: 100%;
   }
   .marca {
     font-weight: 600;
+    font-size: 0.95rem;
     text-decoration: none;
+    letter-spacing: -0.01em;
   }
   .marca span {
     color: var(--accent);
   }
   ul {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 6px 24px;
     list-style: none;
     margin: 0;
     padding: 0;
   }
   .nav ul a {
+    color: var(--text-2);
     text-decoration: none;
-    color: var(--muted);
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
-  .nav ul a:hover,
-  .nav ul a[aria-current='page'] {
-    color: var(--text);
+  .nav ul a:hover {
+    color: #fff;
+  }
+  @media (max-width: 420px) {
+    .nav ul {
+      gap: 16px;
+    }
   }
   main {
-    min-height: calc(100vh - 60px - 81px);
+    min-height: 100svh;
   }
   .rodape {
-    border-top: 1px solid var(--border);
-    padding: 28px 0;
+    border-top: 1px solid var(--line);
+    padding: 32px 0 40px;
     font-size: 0.9rem;
   }
   .rodape-inner {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
     justify-content: space-between;
   }
   .rodape a {

@@ -1,10 +1,18 @@
 ---
 titulo: Sound Mod
-resumo: Soundboard para Windows que toca sons direto no microfone, com hotkeys globais, efeitos de voz e clipe do áudio do PC.
+resumo: Soundboard para Windows que toca sons direto no microfone.
+descricao: Aperte uma tecla e o som sai no seu microfone, no Discord, no jogo ou na call, enquanto você continua falando. Reescrito do zero em Rust, é um único .exe que abre na hora, sem nada para instalar.
+destaques:
+  - Hotkeys globais que funcionam com o app minimizado
+  - Efeitos de voz ao vivo, de robô a autotune
+  - Grava os últimos segundos do áudio do PC para tocar no microfone
+  - Interface neon em 8 cores e um tema Vice City
+stack: [Rust, egui, WASAPI]
+plataforma: Windows
 data: 2026-11-21
-tags: [windows, rust, áudio, desktop]
-destaque: true
-capa: /capas/sound-mod-rs.png
+ordem: 1
+cor: '#e879f9'
+capa: ../../assets/projetos/sound-mod-rs.png
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/sound-mod-rs
@@ -25,7 +33,7 @@ downloads:
 
 Aperte uma tecla (ou clique num botão) e o som sai no canal do seu microfone, para Discord, jogos, chamadas e lives, enquanto você continua falando normalmente. Ele também grava **os últimos segundos do áudio do PC** para você recortar e tocar no microfone.
 
-É a reescrita em Rust do [Sound Mod original em Python](/projetos/sound-mod): um único `.exe`, sem nada para instalar, abrindo na hora.
+É a reescrita em Rust do [Sound Mod original em Python](/projetos/sound-mod): um único `.exe`, sem runtime e sem nada para instalar.
 
 ## Destaques
 

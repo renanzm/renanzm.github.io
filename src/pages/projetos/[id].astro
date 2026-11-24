@@ -1,239 +1,501 @@
 ---
+import { Image, getImage } from 'astro:assets';
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
-import { projetosPublicados } from '../../data/projetos';
+import { projetosPublicados, rotuloStatus, nomesPlataforma, type Projeto } from '../../data/projetos';
 
 export async function getStaticPaths() {
   const projetos = await projetosPublicados();
-  return projetos.map((projeto) => ({ params: { id: projeto.id }, props: { projeto } }));
+  return projetos.map((projeto, i) => ({
+    params: { id: projeto.id },
+    props: { projeto, anterior: projetos[i - 1] ?? null, proximo: projetos[i + 1] ?? null },
+  }));
 }
 
-const { projeto } = Astro.props;
-const { titulo, resumo, data, tags, status, capa, links, downloads } = projeto.data;
+interface Props {
+  projeto: Projeto;
+  anterior: Projeto | null;
+  proximo: Projeto | null;
+}
+
+const { projeto, anterior, proximo } = Astro.props;
+const d = projeto.data;
 const { Content } = await render(projeto);
 
-const nomesPlataforma: Record<string, string> = {
-  windows: 'Windows',
-  macos: 'macOS',
-  linux: 'Linux',
-  android: 'Android',
-  ios: 'iOS',
-  web: 'Web',
-  outro: 'Arquivo',
-};
-const dataFormatada = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
+const imagemSocial =
+  d.capa && d.capa.format !== 'svg' ? (await getImage({ src: d.capa, width: 1200, format: 'jpg' })).src : undefined;
+const ano = d.data.getUTCFullYear();
+const voltar = d.status === 'arquivado' ? '/projetos' : `/#${projeto.id}`;
 const externo = (url: string) => /^https?:\/\//.test(url);
 ---
 
-<Base titulo={titulo} descricao={resumo}>
-  <article>
-    <div class="container estreito">
-      <a href="/projetos" class="voltar muted">← Projetos</a>
+<Base titulo={d.titulo} descricao={d.resumo} imagem={imagemSocial}>
+  <article style={`--c: ${d.cor}`}>
+    <header class="container cab">
+      <a href={voltar} class="voltar"><span aria-hidden="true">←</span> {d.status === 'arquivado' ? 'Índice' : 'Projetos'}</a>
+      <div class="meta">
+        <span class="status">{d.teaser ? `Sneak peek · ${rotuloStatus[d.status]}` : rotuloStatus[d.status]}</span>
+        <span class="rotulo">{ano}</span>
+      </div>
+      <h1>{d.titulo}</h1>
+      <p class="resumo">{d.resumo}</p>
+      <div class="chips">
+        {d.plataforma && <span class="chip">{d.plataforma}</span>}
+        {d.stack.map((s) => <span class="chip">{s}</span>)}
+      </div>
+    </header>
 
-      <header>
-        <h1>{titulo}</h1>
-        <p class="lead muted">{resumo}</p>
-        <div class="meta">
-          <span class="muted mono">{dataFormatada}</span>
-          {status !== 'ativo' && <span class="tag">{status}</span>}
-          {tags.map((t) => <a href={`/projetos?tag=${encodeURIComponent(t)}`} class="tag">{t}</a>)}
-        </div>
-      </header>
-
-      {capa && <img class="capa" src={capa} alt={`Imagem de ${titulo}`} />}
-
-      {
-        (links.length > 0 || downloads.length > 0) && (
-          <div class="painel">
-            {links.length > 0 && (
-              <div>
-                <h2>Acessar</h2>
-                <div class="botoes">
-                  {links.map((l, i) => (
-                    <a
-                      href={l.url}
-                      class={i === 0 ? 'btn btn-primary' : 'btn'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {l.rotulo} ↗
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-            {downloads.length > 0 && (
-              <div>
-                <h2>Downloads</h2>
-                <ul class="downloads">
-                  {downloads.map((d) => (
-                    <li>
-                      <a
-                        href={d.url}
-                        {...(externo(d.url)
-                          ? { target: '_blank', rel: 'noopener noreferrer' }
-                          : { download: '' })}
-                      >
-                        <span class="plataforma mono">{nomesPlataforma[d.plataforma]}</span>
-                        <span class="rotulo">{d.rotulo}</span>
-                        <span class="detalhes muted mono">
-                          {[d.versao && `v${d.versao}`, d.tamanho].filter(Boolean).join(' · ')}
-                        </span>
-                        <span aria-hidden="true">↓</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+    {
+      d.capa && (
+        <div class="container">
+          <div
+            class:list={['capa', 'moldura', larga ? 'cobrir' : 'conter']}
+            style={larga ? `aspect-ratio: ${d.capa.width} / ${d.capa.height}` : undefined}
+          >
+            <Image
+              src={d.capa}
+              alt={`Imagem de ${d.titulo}`}
+              widths={[640, 960, 1280, 1920]}
+              sizes="(min-width: 1200px) 1136px, 100vw"
+              loading="eager"
+            />
           </div>
-        )
-      }
+        </div>
+      )
+    }
+
+    <div class="container corpo">
+      <aside class="painel">
+        {
+          d.teaser ? (
+            <div class="bloco">
+              <p class="rotulo">Prévia</p>
+              <p class="aviso">Projeto em desenvolvimento. O código é privado e esta página mostra só uma prévia.</p>
+              <dl class="ficha">
+                {d.plataforma && (
+                  <div>
+                    <dt>Plataforma</dt>
+                    <dd>{d.plataforma}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt>Feito com</dt>
+                  <dd>{d.stack.join(', ')}</dd>
+                </div>
+                <div>
+                  <dt>Situação</dt>
+                  <dd>{rotuloStatus[d.status]}</dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <>
+              {d.downloads.length > 0 && (
+                <div class="bloco">
+                  <p class="rotulo">Downloads</p>
+                  <ul class="downloads">
+                    {d.downloads.map((dl) => (
+                      <li>
+                        <a
+                          href={dl.url}
+                          {...(externo(dl.url) ? { target: '_blank', rel: 'noopener noreferrer' } : { download: '' })}
+                        >
+                          <span class="dl-plataforma mono">{nomesPlataforma[dl.plataforma]}</span>
+                          <span class="dl-rotulo">{dl.rotulo}</span>
+                          <span class="dl-detalhes mono">
+                            {[dl.versao && `v${dl.versao}`, dl.tamanho].filter(Boolean).join(' · ')}
+                          </span>
+                          <span class="dl-seta" aria-hidden="true">↓</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {d.links.length > 0 && (
+                <div class="bloco">
+                  <p class="rotulo">Links</p>
+                  <ul class="links">
+                    {d.links.map((l) => (
+                      <li>
+                        <a href={l.url} target="_blank" rel="noopener noreferrer">
+                          {l.rotulo} <span aria-hidden="true">↗</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )
+        }
+      </aside>
 
       <div class="conteudo">
         <Content />
       </div>
     </div>
+
+    {
+      d.galeria.length > 0 && (
+        <section class="container galeria" aria-label="Galeria">
+          <p class="rotulo">Galeria</p>
+          <div class="grade-galeria">
+            {d.galeria.map((g) => (
+              <figure>
+                <a
+                  class:list={['moldura', g.src.width / g.src.height >= 1.4 ? 'cobrir' : 'conter']}
+                  href={g.src.src}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <Image src={g.src} alt={g.legenda} widths={[480, 800, 1200]} sizes="(min-width: 960px) 560px, 100vw" />
+                </a>
+                <figcaption>{g.legenda}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <nav class="container vizinhos" aria-label="Outros projetos">
+      {
+        anterior ? (
+          <a href={`/projetos/${anterior.id}`} style={`--c: ${anterior.data.cor}`}>
+            <span class="rotulo">← Anterior</span>
+            <span class="nome">{anterior.data.titulo}</span>
+          </a>
+        ) : (
+          <span />
+        )
+      }
+      {
+        proximo && (
+          <a href={`/projetos/${proximo.id}`} class="proximo" style={`--c: ${proximo.data.cor}`}>
+            <span class="rotulo">Próximo →</span>
+            <span class="nome">{proximo.data.titulo}</span>
+          </a>
+        )
+      }
+    </nav>
   </article>
 </Base>
 
 <style>
   article {
-    padding: 40px 0 72px;
+    padding: calc(var(--header) + 40px) 0 64px;
   }
-  .estreito {
-    max-width: 760px;
+  .cab {
+    max-width: 880px;
+    margin-left: 0;
+  }
+  @media (min-width: 1200px) {
+    .cab {
+      margin-left: max(0px, calc((100% - var(--max)) / 2));
+    }
   }
   .voltar {
-    display: inline-block;
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 40px;
+    color: var(--muted);
+    font-size: 0.92rem;
     text-decoration: none;
-    font-size: 0.9rem;
-    margin-bottom: 28px;
   }
-  h1 {
-    font-size: clamp(2rem, 6vw, 2.8rem);
-  }
-  .lead {
-    font-size: 1.1rem;
-    margin: 0 0 16px;
+  .voltar:hover {
+    color: var(--text);
   }
   .meta {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
+    gap: 18px;
   }
-  .meta a.tag {
-    text-decoration: none;
+  h1 {
+    margin: 16px 0 18px;
+    font-size: clamp(2.8rem, 8vw, 5.5rem);
   }
-  .capa {
-    width: 100%;
-    max-height: 480px;
-    object-fit: contain;
-    padding: 20px;
-    background: var(--surface);
-    margin-top: 32px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
+  .resumo {
+    max-width: 40rem;
+    margin: 0 0 22px;
+    font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+    line-height: 1.5;
+    color: var(--text-2);
   }
-  .painel {
-    margin-top: 32px;
-    padding: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    display: grid;
-    gap: 24px;
-  }
-  .painel h2 {
-    font-size: 0.8rem;
-    font-family: var(--mono);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 12px;
-  }
-  .botoes {
+  .chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 6px;
   }
-  .downloads {
-    list-style: none;
+
+  .capa {
+    margin-top: 48px;
+    aspect-ratio: 16 / 9;
+  }
+  .moldura :global(img) {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .cobrir :global(img) {
+    object-fit: cover;
+  }
+  .conter :global(img) {
+    object-fit: contain;
+    padding: clamp(18px, 4%, 48px);
+    filter: drop-shadow(0 24px 48px rgb(0 0 0 / 0.45));
+  }
+
+  .corpo {
+    display: grid;
+    gap: 40px;
+    padding-top: 56px;
+  }
+  @media (min-width: 960px) {
+    .corpo {
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 72px;
+      align-items: start;
+    }
+    .painel {
+      order: 2;
+      position: sticky;
+      top: calc(var(--header) + 24px);
+    }
+  }
+  .painel {
+    display: grid;
+    gap: 28px;
+  }
+  .bloco {
+    display: grid;
+    gap: 12px;
+  }
+  .bloco .rotulo {
     margin: 0;
-    padding: 0;
+  }
+  .aviso {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 0.95rem;
+  }
+  .ficha {
+    margin: 0;
+    border-top: 1px solid var(--line);
+  }
+  .ficha div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.92rem;
+  }
+  .ficha dt {
+    color: var(--muted);
+  }
+  .ficha dd {
+    margin: 0;
+    text-align: right;
+  }
+  .downloads,
+  .links {
     display: grid;
     gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .downloads a {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface-2);
+    grid-template-columns: 1fr auto;
+    gap: 2px 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
     text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
   }
   .downloads a:hover {
-    border-color: var(--accent);
+    border-color: color-mix(in srgb, var(--c) 60%, transparent);
+    background: color-mix(in srgb, var(--c) 6%, var(--surface));
+  }
+  .dl-plataforma {
+    font-size: 0.72rem;
+    color: var(--c);
+  }
+  .dl-rotulo {
+    grid-column: 1;
+    font-weight: 500;
+  }
+  .dl-detalhes {
+    grid-column: 1;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .dl-seta {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+    color: var(--text-2);
+  }
+  .links a {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--text-2);
+  }
+  .links a:hover {
     color: var(--text);
   }
-  .plataforma {
-    font-size: 0.75rem;
-    color: var(--accent);
-    min-width: 4.5em;
-  }
-  .detalhes {
-    font-size: 0.75rem;
-  }
-  @media (max-width: 480px) {
-    .downloads a {
-      grid-template-columns: 1fr auto;
-    }
-    .plataforma,
-    .detalhes {
-      grid-column: 1;
-    }
-    .downloads a > span:last-child {
-      grid-row: 1 / span 3;
-      grid-column: 2;
-    }
-  }
+
   .conteudo {
-    margin-top: 40px;
-    font-size: 1.05rem;
+    max-width: 44rem;
+    font-size: 1.04rem;
+    line-height: 1.75;
+    color: var(--text-2);
+  }
+  .conteudo :global(> :first-child) {
+    margin-top: 0;
   }
   .conteudo :global(h2) {
-    font-size: 1.4rem;
-    margin-top: 2em;
+    margin: 2.2em 0 0.7em;
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
+    color: var(--text);
   }
-  .conteudo :global(p),
+  .conteudo :global(strong) {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .conteudo :global(a) {
+    color: var(--text);
+  }
+  .conteudo :global(ul) {
+    padding-left: 1.2em;
+  }
   .conteudo :global(li) {
-    color: #c9cdd5;
+    margin: 0.4em 0;
+  }
+  .conteudo :global(li::marker) {
+    color: var(--c);
+  }
+  .conteudo :global(blockquote) {
+    margin: 1.6em 0;
+    padding: 14px 18px;
+    border-left: 2px solid var(--c);
+    border-radius: 0 10px 10px 0;
+    background: var(--surface);
+  }
+  .conteudo :global(blockquote p) {
+    margin: 0;
   }
   .conteudo :global(code) {
     font-family: var(--mono);
-    font-size: 0.9em;
+    font-size: 0.88em;
+    padding: 0.12em 0.4em;
+    border-radius: 6px;
     background: var(--surface-2);
-    padding: 0.1em 0.35em;
-    border-radius: 4px;
+    color: var(--text);
   }
   .conteudo :global(pre) {
-    padding: 16px;
-    border-radius: 8px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
     overflow-x: auto;
-    border: 1px solid var(--border);
+    font-size: 0.9rem;
   }
   .conteudo :global(pre code) {
-    background: none;
     padding: 0;
+    background: none;
   }
-  .conteudo :global(img) {
-    border-radius: 8px;
-    border: 1px solid var(--border);
+  .conteudo :global(table) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  .conteudo :global(th),
+  .conteudo :global(td) {
+    padding: 10px 14px 10px 0;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .conteudo :global(th) {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .galeria {
+    padding-top: 72px;
+  }
+  .grade-galeria {
+    display: grid;
+    gap: 20px;
+    margin-top: 16px;
+  }
+  @media (min-width: 760px) {
+    .grade-galeria {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  figure {
+    margin: 0;
+  }
+  figure .moldura {
+    display: block;
+    aspect-ratio: 16 / 10;
+    transition: border-color 0.2s;
+  }
+  figure .moldura:hover {
+    border-color: var(--line-2);
+  }
+  figcaption {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .vizinhos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-top: 96px;
+  }
+  .vizinhos a {
+    display: grid;
+    gap: 6px;
+    padding: 22px 24px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .vizinhos a:hover {
+    border-color: color-mix(in srgb, var(--c) 55%, transparent);
+    background: color-mix(in srgb, var(--c) 5%, transparent);
+  }
+  .vizinhos .proximo {
+    grid-column: 2;
+    text-align: right;
+  }
+  .vizinhos .nome {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  @media (max-width: 560px) {
+    .vizinhos {
+      grid-template-columns: 1fr;
+    }
+    .vizinhos .proximo {
+      grid-column: 1;
+    }
   }
 </style>

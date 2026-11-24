@@ -1,9 +1,18 @@
 ---
 titulo: Focus Temp Tool
-resumo: Ferramenta para trocar a temperatura do painel do Ford Focus Mk2 de simulada para real via ELM327.
+resumo: Ferramenta para o painel do Ford Focus Mk2 mostrar a temperatura real do motor, via ELM327.
+descricao: Os Focus brasileiros saem de fábrica com o ponteiro de temperatura simulado, parado no meio. A ideia é fazer só a troca para o sensor real, com poucos comandos e com segurança.
+destaques:
+  - Uma única troca, sem as dezenas de opções do ELM-FF2
+  - Gravação travada até os valores serem confirmados num carro real
+  - Analisa logs de captura para achar os valores certos
+stack: [Python, ELM327, MS-CAN]
+plataforma: Linha de comando
 data: 2026-11-07
-tags: [python, automotivo, cli]
-status: beta
+ordem: 5
+cor: '#60a5fa'
+status: em-desenvolvimento
+capa: ../../assets/projetos/focus-temp-tool.svg
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/focus-temp-tool
@@ -23,6 +32,10 @@ O ELM-FF2 já faz essa troca, mas é difícil de usar e cheio de opções que a 
 | `scan` | Testa o adaptador e tenta falar com o painel | Pronto, ainda não testado em carro |
 | `status` | Mostra se a temperatura está real ou simulada | Em desenvolvimento |
 | `set-real` / `set-sim` | Troca entre real e simulada | Travado |
+
+```bash
+python focus_temp.py --porta COM3 scan
+```
 
 ## O que você precisa
 
