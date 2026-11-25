@@ -28,9 +28,9 @@ links:
 downloads:
   - rotulo: Executável (.exe)
     plataforma: windows
-    url: https://github.com/renanzm/cursor-usage-widget/releases/download/v1.0.0/cursor-usage-widget.exe
-    versao: 1.0.0
-    tamanho: 4,3 MB
+    url: https://github.com/renanzm/cursor-usage-widget/releases/download/v1.1.0/cursor-usage-widget.exe
+    versao: 1.1.0
+    tamanho: 4,4 MB
 ---
 
 Mostra, sem abrir nenhum painel web, **quanto você está gastando** com agentes de código e **quanto já usou dos limites do plano**. Fica na borda da tela como uma abinha, e passar o mouse por cima abre o painel completo.
