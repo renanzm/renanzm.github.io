@@ -433,11 +433,14 @@ const declaracao = 'Dados que não podem dar errado e apps que resolvem problema
     font-size: 0.8rem;
     color: var(--text-2);
     text-align: center;
-    transition: border-color 0.2s, transform 0.2s;
+    /* O GSAP anima o transform na entrada; o hover usa top para não brigar com ele */
+    position: relative;
+    top: 0;
+    transition: border-color 0.2s, top 0.2s;
   }
   .icones li:hover {
     border-color: var(--line-2);
-    transform: translateY(-2px);
+    top: -2px;
   }
   .extras {
     display: flex;
