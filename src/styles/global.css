@@ -184,6 +184,42 @@ p {
   pointer-events: none;
 }
 
+/* Luz sutil do site inteiro (ver scripts/luz-site.ts) */
+.luz-site {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.luz-site.ativa {
+  opacity: 1;
+}
+.luz-site-brilho,
+.luz-site-pontos {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  mix-blend-mode: screen;
+}
+.luz-site-brilho {
+  width: 1300px;
+  height: 1300px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--luz-site-cor, var(--accent)) 7%, transparent), transparent);
+}
+.luz-site-pontos {
+  width: 460px;
+  height: 460px;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--luz-site-cor, var(--accent)) 45%, white) 0.9px, transparent 1.4px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent);
+  mask-image: radial-gradient(closest-side, #000, transparent);
+  opacity: 0.2;
+}
+
 /* Inclinação 3D e luz que seguem o mouse (ver scripts/inclinacao.ts) */
 .palco3d {
   perspective: 1100px;

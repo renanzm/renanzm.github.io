@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
+import { corDaLuz } from './luz-site';
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
@@ -312,6 +313,9 @@ function trilha(lenis: Lenis) {
     if (deveTocar !== tocando) {
       tocando = deveTocar;
       tocarSo(deveTocar);
+      // A luz do site assume a cor do projeto em destaque
+      const secao = deveTocar ? document.getElementById(deveTocar) : null;
+      corDaLuz(secao ? getComputedStyle(secao).getPropertyValue('--c').trim() : null);
     }
   };
   lenis.on('scroll', atualizar);

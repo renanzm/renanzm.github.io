@@ -75,6 +75,10 @@ const imagemAbs = imagem ? new URL(imagem, Astro.site).href : undefined;
         </ul>
       </div>
     </footer>
+    <script>
+      import { iniciarLuzDoSite } from '../scripts/luz-site';
+      iniciarLuzDoSite();
+    </script>
   </body>
 </html>
 
