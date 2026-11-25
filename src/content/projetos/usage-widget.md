@@ -28,8 +28,8 @@ links:
 downloads:
   - rotulo: Executável (.exe)
     plataforma: windows
-    url: https://github.com/renanzm/cursor-usage-widget/releases/download/v1.1.0/cursor-usage-widget.exe
-    versao: 1.1.0
+    url: https://github.com/renanzm/cursor-usage-widget/releases/download/v1.1.1/cursor-usage-widget.exe
+    versao: 1.1.1
     tamanho: 4,4 MB
 ---
 
