@@ -150,7 +150,7 @@ function projetosEmPilha() {
       ease: 'none',
       scrollTrigger: { trigger: lugar, start: 'top 80%', end: `top ${CABECALHO + 24}px`, scrub: true },
     });
-    gsap.from(secao.querySelector('.midia'), {
+    gsap.from(secao.querySelector('.palco3d'), {
       scale: 1.14,
       opacity: 0,
       ease: 'none',
@@ -186,7 +186,7 @@ function projetosSimples() {
     scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
   });
   gsap.utils.toArray<HTMLElement>('[data-vitrine]').forEach((secao) => {
-    gsap.from(secao.querySelectorAll('.midia, .info > *'), {
+    gsap.from(secao.querySelectorAll('.palco3d, .info > *'), {
       y: 40,
       opacity: 0,
       duration: 0.9,

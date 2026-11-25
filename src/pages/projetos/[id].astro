@@ -48,8 +48,8 @@ const externo = (url: string) => /^https?:\/\//.test(url);
 
     {
       d.video ? (
-        <div class="container">
-          <div class="capa moldura com-video" style={`aspect-ratio: ${d.video.largura} / ${d.video.altura}`}>
+        <div class="container palco3d">
+          <div class="capa moldura com-video" style={`aspect-ratio: ${d.video.largura} / ${d.video.altura}`} data-inclina="0.5">
             <video
               src={d.video.src}
               poster={d.video.poster}
@@ -65,10 +65,11 @@ const externo = (url: string) => /^https?:\/\//.test(url);
           </div>
         </div>
       ) : d.capa && (
-        <div class="container">
+        <div class="container palco3d">
           <div
             class:list={['capa', 'moldura', larga ? 'cobrir' : 'conter']}
             style={larga ? `aspect-ratio: ${d.capa.width} / ${d.capa.height}` : undefined}
+            data-inclina="0.5"
           >
             <Image
               src={d.capa}
@@ -160,12 +161,13 @@ const externo = (url: string) => /^https?:\/\//.test(url);
           <p class="rotulo">Galeria</p>
           <div class="grade-galeria">
             {d.galeria.map((g) => (
-              <figure>
+              <figure class="palco3d">
                 <a
                   class:list={['moldura', g.src.width / g.src.height >= 1.4 ? 'cobrir' : 'conter']}
                   href={g.src.src}
                   target="_blank"
                   rel="noopener"
+                  data-inclina
                 >
                   <Image src={g.src} alt={g.legenda} widths={[480, 800, 1200]} sizes="(min-width: 960px) 560px, 100vw" />
                 </a>
@@ -202,6 +204,9 @@ const externo = (url: string) => /^https?:\/\//.test(url);
 
 <script>
   // Vídeo do topo: toca sozinho, sem som; quem prefere menos movimento recebe o pôster com controles
+  import { iniciarInclinacao } from '../../scripts/inclinacao';
+  iniciarInclinacao();
+
   const video = document.querySelector<HTMLVideoElement>('video[data-video-topo]');
   if (video) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) video.controls = true;

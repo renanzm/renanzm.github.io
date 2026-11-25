@@ -72,12 +72,14 @@ const encaixe = d.video ? 'com-video' : larga ? 'cobrir' : 'conter';
       </div>
     </div>
 
+    <div class="palco3d">
     <a
       class:list={['midia', 'moldura', encaixe]}
       style={proporcao ? `aspect-ratio: ${proporcao}` : undefined}
       href={pagina}
       tabindex="-1"
       aria-hidden="true"
+      data-inclina
     >
       {
         d.video ? (
@@ -116,6 +118,7 @@ const encaixe = d.video ? 'com-video' : larga ? 'cobrir' : 'conter';
       }
       {d.teaser && <span class="selo mono">em breve</span>}
     </a>
+    </div>
   </div>
 </section>
 
@@ -263,7 +266,7 @@ const encaixe = d.video ? 'com-video' : larga ? 'cobrir' : 'conter';
   }
   /* No celular a imagem vem antes do texto */
   @media (max-width: 959px) {
-    .midia {
+    .palco3d {
       order: -1;
     }
   }

@@ -184,6 +184,51 @@ p {
   pointer-events: none;
 }
 
+/* Inclinação 3D e luz que seguem o mouse (ver scripts/inclinacao.ts) */
+.palco3d {
+  perspective: 1100px;
+}
+.inclina {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.luz {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--luz, 0);
+  z-index: 3;
+}
+/* Brilho na cor do projeto, onde o mouse está */
+.luz-cor {
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--c, #fff) 30%, transparent), transparent 62%);
+  mix-blend-mode: screen;
+}
+/* Reflexo de luz branca, como num vidro */
+.luz-reflexo {
+  background: radial-gradient(560px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.22), transparent 45%);
+  mix-blend-mode: overlay;
+}
+/* Malha de pontos que só acende perto do cursor */
+.luz-pontos {
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--c, #fff) 65%, white) 1px, transparent 1.6px);
+  background-size: 12px 12px;
+  -webkit-mask-image: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), #000, transparent 72%);
+  mask-image: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), #000, transparent 72%);
+  mix-blend-mode: screen;
+  opacity: calc(var(--luz, 0) * 0.45);
+}
+/* A borda acende no trecho mais perto do mouse */
+.luz-borda {
+  padding: 1.5px;
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--c, #fff) 80%, white), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: 4;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
