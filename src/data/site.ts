@@ -12,7 +12,7 @@ export const site = {
   descricao:
     'Desenvolvedor de software focado em migração e auditoria de dados, apps para Windows em Rust e Python e um jogo mobile em Godot.',
   bio: [
-    'Atuo há 9 anos em tecnologia e 4 como desenvolvedor de software na Thomson Reuters, no ecossistema Domínio Sistemas. Trabalho com migração, auditoria e validação de dados para sistemas contábeis, de folha de pagamento e eSocial.',
+    'Atuo há 9 anos em tecnologia e 5 como desenvolvedor de software na Thomson Reuters, no ecossistema Domínio Sistemas. Trabalho com migração, auditoria e validação de dados para sistemas contábeis, de folha de pagamento e eSocial.',
     'Nos projetos pessoais, crio apps para Windows em Rust e Python, ferramentas e um jogo mobile em Godot. Uso IA todos os dias para acelerar o trabalho, sem abrir mão de revisão e testes.',
   ],
   // Fatos rápidos ao lado da bio
