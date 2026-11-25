@@ -11,7 +11,20 @@ plataforma: Web
 data: 2026-11-02
 ordem: 4
 cor: '#eab308'
-capa: ../../assets/projetos/rz-airsoft.png
+capa: ../../assets/projetos/rz-airsoft/painel.webp
+galeria:
+  - src: ../../assets/projetos/rz-airsoft/quadro.webp
+    legenda: Quadro da bancada, com as ordens de serviço por etapa
+  - src: ../../assets/projetos/rz-airsoft/os.webp
+    legenda: Ordem de serviço com equipamento, serviços e pagamento
+  - src: ../../assets/projetos/rz-airsoft/relatorio.webp
+    legenda: Relatório técnico com prévia ao vivo do PDF
+  - src: ../../assets/projetos/rz-airsoft/cliente.webp
+    legenda: Histórico e valores de cada cliente
+  - src: ../../assets/projetos/rz-airsoft/servicos.webp
+    legenda: Catálogo de serviços e preços
+  - src: ../../assets/projetos/rz-airsoft/marketing.webp
+    legenda: Banner da oficina para Instagram e WhatsApp
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/rz-airsoft
@@ -19,7 +32,7 @@ links:
 
 Sistema feito sob medida para a oficina RZ Airsoft. Roda no computador da oficina, com login e senha, e pode ser aberto de qualquer lugar pelo navegador ou instalado como aplicativo no Chrome e no Edge.
 
-> Software proprietário: o código está público para consulta, mas todos os direitos são reservados.
+> Software proprietário: o código está público para consulta, mas todos os direitos são reservados. As imagens desta página usam dados fictícios.
 
 ## Telas
 
