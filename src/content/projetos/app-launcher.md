@@ -35,8 +35,8 @@ links:
 downloads:
   - rotulo: Launcher.exe
     plataforma: windows
-    url: https://github.com/renanzm/app-launcher/releases/download/v2.0.0/Launcher.exe
-    versao: 2.0.0
+    url: https://github.com/renanzm/app-launcher/releases/download/v2.0.1/Launcher.exe
+    versao: 2.0.1
     tamanho: 38,7 MB
 ---
 
