@@ -7,7 +7,7 @@ data: 2026-11-02
 ordem: 90
 cor: '#94a3b8'
 status: arquivado
-capa: ../../assets/projetos/sound-mod.png
+capa: ../../assets/projetos/sound-mod-python.webp
 links:
   - rotulo: Ver a versão nova
     url: https://github.com/renanzm/sound-mod-rs
