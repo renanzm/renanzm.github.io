@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import MostradorFocus from './MostradorFocus.astro';
 import { acaoPrincipal, rotuloStatus, type Projeto } from '../data/projetos';
 
 interface Props {
@@ -72,7 +73,9 @@ const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
       aria-hidden="true"
     >
       {
-        d.capa ? (
+        projeto.id === 'focus-temp-tool' ? (
+          <MostradorFocus />
+        ) : d.capa ? (
           <Image
             src={d.capa}
             alt=""
@@ -97,8 +100,17 @@ const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
     align-items: center;
     padding: 72px 0;
     border-top: 1px solid var(--line);
-    scroll-snap-align: start;
+    background: var(--bg);
     overflow: clip;
+  }
+  /* Desktop com animações: cada projeto sobe como um cartão por cima do anterior */
+  :global(.pilha) .vitrine {
+    border-radius: 32px 32px 0 0;
+    border-top-color: var(--line-2);
+    box-shadow: 0 -28px 80px rgb(0 0 0 / 0.6);
+  }
+  :global(.pilha) .grade {
+    transform-origin: 50% 0%;
   }
   .vitrine::before {
     content: '';
@@ -192,7 +204,12 @@ const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
   .midia {
     display: block;
     aspect-ratio: 16 / 10;
-    transition: border-color 0.2s, transform 0.3s;
+    transition: border-color 0.2s;
+  }
+  .midia :global(svg) {
+    position: relative;
+    width: 100%;
+    height: 100%;
   }
   /* No celular a imagem vem antes do texto */
   @media (max-width: 959px) {
@@ -262,22 +279,4 @@ const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
     }
   }
 
-  @supports (animation-timeline: view()) {
-    .info > *,
-    .midia {
-      animation: surgir linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 28%;
-    }
-  }
-  @keyframes surgir {
-    from {
-      opacity: 0;
-      transform: translateY(36px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
 </style>
