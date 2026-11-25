@@ -12,9 +12,8 @@ export const site = {
   descricao:
     'Desenvolvedor de software focado em migração e auditoria de dados, apps para Windows em Rust e Python e um jogo mobile em Godot.',
   bio: [
-    'Sou desenvolvedor de software na Thomson Reuters, no ecossistema Domínio Sistemas. Trabalho com conversão, migração, auditoria e validação de dados para sistemas contábeis, de folha de pagamento e eSocial: investigo inconsistências em bancos de dados e conversores, corrijo em Python e SQL e cubro as correções com testes automatizados, com branches, pull requests e releases que deixam cada entrega rastreável.',
-    'Mexo com computador desde criança, no tempo do Windows 98, e foi daí que veio a intimidade com o Windows e com software desktop. Nos projetos pessoais, transformo ideias em programas de verdade: um soundboard em Rust que toca sons direto no microfone, um widget com o gasto em agentes de IA, um launcher que instala e atualiza apps, um sistema para uma oficina de airsoft e um jogo mobile em Godot.',
-    'Uso IA generativa todos os dias, com Claude, Codex, Cursor, agentes, MCP e RAG, para acelerar diagnósticos e padronizar análises, sem abrir mão de revisão de código e testes.',
+    'Sou desenvolvedor de software na Thomson Reuters, no ecossistema Domínio Sistemas. Trabalho com migração, auditoria e validação de dados para sistemas contábeis, de folha de pagamento e eSocial, com correções em Python e SQL cobertas por testes.',
+    'Nos projetos pessoais, crio apps para Windows em Rust e Python, ferramentas e um jogo mobile em Godot. Uso IA todos os dias para acelerar o trabalho, sem abrir mão de revisão e testes.',
   ],
   // Fatos rápidos ao lado da bio
   fatos: [
