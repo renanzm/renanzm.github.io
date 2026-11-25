@@ -1,40 +1,119 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500" role="img" aria-label="Ponteiro de temperatura: o simulado parado no meio e o real indicando o motor frio">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 500" width="800" height="500" role="img" aria-label="Antes e depois: à esquerda o ponteiro de temperatura simulado, parado no meio; à direita o ponteiro real, seguindo o sensor do motor">
   <defs>
-    <linearGradient id="faixa" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#60a5fa"/>
-      <stop offset="0.5" stop-color="#e5e7eb"/>
-      <stop offset="1" stop-color="#f87171"/>
-    </linearGradient>
-    <radialGradient id="brilho" cx="0.5" cy="0.75" r="0.6">
-      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.18"/>
+    <radialGradient id="fundo" cx="50%" cy="42%" r="78%">
+      <stop offset="0" stop-color="#121822"/>
+      <stop offset="1" stop-color="#06080c"/>
+    </radialGradient>
+    <radialGradient id="luzReal" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.24"/>
       <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="face" cx="0.5" cy="0.38" r="0.62">
+      <stop offset="0" stop-color="#1b2130"/>
+      <stop offset="1" stop-color="#0b0f15"/>
+    </radialGradient>
+    <linearGradient id="aro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b6473"/>
+      <stop offset="0.45" stop-color="#1f2733"/>
+      <stop offset="1" stop-color="#3a4250"/>
+    </linearGradient>
+    <linearGradient id="faixa" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="0.3" stop-color="#93c5fd"/>
+      <stop offset="0.5" stop-color="#e5e7eb"/>
+      <stop offset="0.74" stop-color="#fca5a5"/>
+      <stop offset="1" stop-color="#ef4444"/>
+    </linearGradient>
+    <radialGradient id="cubo" cx="0.35" cy="0.32" r="0.75">
+      <stop offset="0" stop-color="#f3f4f6"/>
+      <stop offset="1" stop-color="#4b5563"/>
+    </radialGradient>
+    <filter id="brilho" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="borrado"/>
+      <feMerge>
+        <feMergeNode in="borrado"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Mostrador: face, aro, marcações e letras -->
+    <g id="mostrador">
+      <circle r="134" fill="url(#face)" stroke="url(#aro)" stroke-width="7"/>
+      <circle r="123" fill="none" stroke="#ffffff" stroke-opacity="0.06"/>
+      <g stroke="#cbd5e1" stroke-linecap="round">
+        <g stroke-width="3.5">
+          <line x1="-84.9" y1="49" x2="-72.7" y2="42"/>
+          <line x1="-84.9" y1="-49" x2="-72.7" y2="-42"/>
+          <line x1="0" y1="-98" x2="0" y2="-84"/>
+          <line x1="84.9" y1="-49" x2="72.7" y2="-42"/>
+          <line x1="84.9" y1="49" x2="72.7" y2="42"/>
+        </g>
+        <g stroke-width="2" stroke-opacity="0.6">
+          <line x1="-98" y1="0" x2="-90" y2="0"/>
+          <line x1="-49" y1="-84.9" x2="-45" y2="-77.9"/>
+          <line x1="49" y1="-84.9" x2="45" y2="-77.9"/>
+          <line x1="98" y1="0" x2="90" y2="0"/>
+        </g>
+      </g>
+      <g font-family="'Segoe UI', system-ui, sans-serif" font-size="19" font-weight="700" fill="#e5e7eb" text-anchor="middle">
+        <text x="-58" y="30">C</text>
+        <text x="58" y="30">H</text>
+      </g>
+    </g>
+
+    <!-- Faixa de cores (240° de varredura, aberta embaixo) -->
+    <path id="arco" d="M -97 56 A 112 112 0 1 1 97 56" fill="none" stroke="url(#faixa)" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Símbolo de temperatura do motor -->
+    <g id="simbolo" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="-2.6" y="-24" width="5.2" height="17" rx="2.6"/>
+      <circle cy="-3" r="5"/>
+      <path d="M 4.5 -20 h 5 M 4.5 -14.5 h 5"/>
+      <path d="M -15 9 q 3.75 -4.5 7.5 0 t 7.5 0 t 7.5 0 t 7.5 0"/>
+    </g>
+
+    <polygon id="ponteiro" points="-13,-4.2 0,-6 92,-1.4 92,1.4 0,6 -13,4.2"/>
   </defs>
-  <rect width="800" height="500" fill="#0c0f14"/>
-  <rect width="800" height="500" fill="url(#brilho)"/>
-  <path d="M160 360 A240 240 0 0 1 640 360" fill="none" stroke="url(#faixa)" stroke-width="12" stroke-linecap="round"/>
-  <g stroke="#9ca3af" stroke-width="4" stroke-linecap="round" opacity="0.7">
-    <line x1="204" y1="360" x2="184" y2="360"/>
-    <line x1="218.9" y1="285" x2="200.4" y2="277.3"/>
-    <line x1="261.4" y1="221.4" x2="247.3" y2="207.3"/>
-    <line x1="325" y1="178.9" x2="317.3" y2="160.4"/>
-    <line x1="400" y1="164" x2="400" y2="144"/>
-    <line x1="475" y1="178.9" x2="482.7" y2="160.4"/>
-    <line x1="538.6" y1="221.4" x2="552.7" y2="207.3"/>
-    <line x1="581.1" y1="285" x2="599.6" y2="277.3"/>
-    <line x1="596" y1="360" x2="616" y2="360"/>
+
+  <rect width="800" height="500" fill="url(#fundo)"/>
+  <circle cx="585" cy="238" r="215" fill="url(#luzReal)"/>
+
+  <text x="400" y="58" text-anchor="middle" font-family="ui-monospace, 'Cascadia Code', Consolas, monospace" font-size="14" letter-spacing="3" fill="#6b7280">FORD FOCUS MK2 · TEMPERATURA DO MOTOR</text>
+
+  <!-- Antes: simulada -->
+  <g transform="translate(215 238)">
+    <use xlink:href="#mostrador" href="#mostrador"/>
+    <use xlink:href="#arco" href="#arco" opacity="0.28"/>
+    <use xlink:href="#simbolo" href="#simbolo" stroke="#6b7280" transform="translate(0 58)"/>
+    <use xlink:href="#ponteiro" href="#ponteiro" fill="#9ca3af" transform="rotate(-90)"/>
+    <circle r="12" fill="url(#cubo)"/>
+    <circle r="4.5" fill="#0b0f15"/>
   </g>
-  <g font-family="ui-monospace, Consolas, monospace" font-size="26" font-weight="700" fill="#e5e7eb" text-anchor="middle">
-    <text x="160" y="408">C</text>
-    <text x="640" y="408">H</text>
+
+  <!-- Seta -->
+  <g transform="translate(400 238)">
+    <circle r="23" fill="#0f141c" stroke="#2b3442" stroke-width="1.5"/>
+    <path d="M -9 0 H 9 M 3 -6.5 L 9.5 0 L 3 6.5" fill="none" stroke="#e5e7eb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-  <line x1="400" y1="360" x2="400" y2="176" stroke="#9ca3af" stroke-width="7" stroke-dasharray="12 12" stroke-linecap="round" opacity="0.55"/>
-  <line x1="400" y1="360" x2="291" y2="204" stroke="#60a5fa" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="400" cy="360" r="20" fill="#e5e7eb"/>
-  <circle cx="400" cy="360" r="8" fill="#0c0f14"/>
-  <g font-family="ui-monospace, Consolas, monospace" font-size="20">
-    <text x="400" y="126" text-anchor="middle" fill="#9ca3af">simulada</text>
-    <text x="270" y="190" text-anchor="end" fill="#60a5fa">real</text>
-    <text x="400" y="458" text-anchor="middle" fill="#6b7280">Ford Focus Mk2 · ELM327 · MS-CAN</text>
+
+  <!-- Depois: real -->
+  <g transform="translate(585 238)">
+    <use xlink:href="#mostrador" href="#mostrador"/>
+    <use xlink:href="#arco" href="#arco"/>
+    <use xlink:href="#simbolo" href="#simbolo" stroke="#60a5fa" transform="translate(0 58)" filter="url(#brilho)"/>
+    <use xlink:href="#ponteiro" href="#ponteiro" fill="#fb923c" transform="rotate(-138)" filter="url(#brilho)"/>
+    <circle r="12" fill="url(#cubo)"/>
+    <circle r="4.5" fill="#0b0f15"/>
+  </g>
+
+  <g text-anchor="middle">
+    <g font-family="ui-monospace, 'Cascadia Code', Consolas, monospace" font-size="16" font-weight="700" letter-spacing="4">
+      <text x="215" y="424" fill="#9ca3af">SIMULADA</text>
+      <text x="585" y="424" fill="#60a5fa">REAL</text>
+    </g>
+    <g font-family="'Segoe UI', system-ui, sans-serif" font-size="15" fill="#6b7280">
+      <text x="215" y="450">ponteiro parado no meio</text>
+      <text x="585" y="450">segue o sensor do motor</text>
+    </g>
   </g>
 </svg>
