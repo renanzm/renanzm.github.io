@@ -13,6 +13,14 @@ ordem: 5
 cor: '#60a5fa'
 status: em-desenvolvimento
 capa: ../../assets/projetos/focus-temp-tool.svg
+video:
+  src: /videos/focus-temp-tool.mp4
+  poster: /videos/focus-temp-tool.webp
+  largura: 1280
+  altura: 800
+galeria:
+  - src: ../../assets/projetos/focus-temp-tool.svg
+    legenda: A ideia, com o ponteiro simulado parado e o real seguindo o sensor
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/focus-temp-tool

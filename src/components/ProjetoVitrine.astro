@@ -16,6 +16,13 @@ const pagina = `/projetos/${projeto.id}`;
 const dois = (n: number) => String(n).padStart(2, '0');
 // Imagens largas preenchem a moldura; altas ou quadradas ficam inteiras
 const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
+// Com vídeo, a moldura segue a proporção dele
+const proporcao = d.video
+  ? `${d.video.largura} / ${d.video.altura}`
+  : larga && d.capa
+    ? `${d.capa.width} / ${d.capa.height}`
+    : undefined;
+const encaixe = d.video ? 'com-video' : larga ? 'cobrir' : 'conter';
 ---
 
 <section
@@ -66,14 +73,34 @@ const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
     </div>
 
     <a
-      class:list={['midia', 'moldura', larga ? 'cobrir' : 'conter']}
-      style={larga && d.capa ? `aspect-ratio: ${d.capa.width} / ${d.capa.height}` : undefined}
+      class:list={['midia', 'moldura', encaixe]}
+      style={proporcao ? `aspect-ratio: ${proporcao}` : undefined}
       href={pagina}
       tabindex="-1"
       aria-hidden="true"
     >
       {
-        projeto.id === 'focus-temp-tool' ? (
+        d.video ? (
+          <>
+            <video
+              class="video"
+              src={d.video.src}
+              poster={d.video.poster}
+              width={d.video.largura}
+              height={d.video.altura}
+              muted
+              loop
+              playsinline
+              preload="metadata"
+              data-video
+            />
+            {projeto.id === 'focus-temp-tool' && (
+              <div class="mostrador-mini">
+                <MostradorFocus />
+              </div>
+            )}
+          </>
+        ) : projeto.id === 'focus-temp-tool' ? (
           <MostradorFocus />
         ) : d.capa ? (
           <Image
@@ -210,6 +237,29 @@ const larga = d.capa ? d.capa.width / d.capa.height >= 1.4 : false;
     position: relative;
     width: 100%;
     height: 100%;
+  }
+  .video {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: var(--surface);
+  }
+  /* Focus: o ponteiro (animado pela rolagem) num cartão menor sobre o vídeo do terminal */
+  .mostrador-mini {
+    position: absolute;
+    right: 3%;
+    bottom: 5%;
+    width: 46%;
+    border-radius: 12px;
+    border: 1px solid var(--line-2);
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
+  }
+  .mostrador-mini :global(svg) {
+    display: block;
+    height: auto;
   }
   /* No celular a imagem vem antes do texto */
   @media (max-width: 959px) {

@@ -13,6 +13,11 @@ data: 2026-11-25
 ordem: 3
 cor: '#a78bfa'
 capa: ../../assets/projetos/app-launcher/principal.webp
+video:
+  src: /videos/app-launcher.mp4
+  poster: /videos/app-launcher.webp
+  largura: 1200
+  altura: 720
 galeria:
   - src: ../../assets/projetos/app-launcher/principal.webp
     legenda: Biblioteca de apps e a página de cada projeto

@@ -12,6 +12,11 @@ data: 2026-11-02
 ordem: 4
 cor: '#eab308'
 capa: ../../assets/projetos/rz-airsoft/painel.webp
+video:
+  src: /videos/rz-airsoft.mp4
+  poster: /videos/rz-airsoft.webp
+  largura: 1280
+  altura: 800
 galeria:
   - src: ../../assets/projetos/rz-airsoft/quadro.webp
     legenda: Quadro da bancada, com as ordens de serviço por etapa

@@ -14,6 +14,11 @@ cor: '#fb923c'
 status: em-desenvolvimento
 teaser: true
 capa: ../../assets/jogo/fase-2.png
+video:
+  src: /videos/idle-gas-station.mp4
+  poster: /videos/idle-gas-station.webp
+  largura: 1280
+  altura: 720
 galeria:
   - src: ../../assets/jogo/noite.png
     legenda: Fase 1 à noite, no posto rural isolado

@@ -25,6 +25,10 @@ const projetos = defineCollection({
       teaser: z.boolean().default(false),
       rascunho: z.boolean().default(false),
       capa: image().optional(),
+      // Mini vídeo do app funcionando (arquivos em public/videos), tocado conforme a rolagem
+      video: z
+        .object({ src: z.string(), poster: z.string(), largura: z.number(), altura: z.number() })
+        .optional(),
       galeria: z.array(z.object({ src: image(), legenda: z.string() })).default([]),
       links: z.array(z.object({ rotulo: z.string(), url: z.string().url() })).default([]),
       downloads: z

@@ -21,6 +21,8 @@ const posicaoReal = (el: HTMLElement): HTMLElement =>
 export function iniciarAnimacoes() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     raiz.classList.remove('vai-animar');
+    // Nada toca sozinho: os vídeos ficam no pôster, com controles para quem quiser assistir
+    document.querySelectorAll<HTMLVideoElement>('video[data-video]').forEach((v) => (v.controls = true));
     trilhaSimples();
     return;
   }
@@ -273,21 +275,43 @@ function marcarNaTrilha(id: string) {
   });
 }
 
-/** Marca o projeto cuja posição real (pin-spacer) já passou do meio da tela. */
+/** Toca só o vídeo do projeto ativo (do começo, quando ele chega) e pausa os outros. */
+function tocarSo(id: string | null) {
+  document.querySelectorAll<HTMLVideoElement>('[data-vitrine] video[data-video]').forEach((video) => {
+    const daSecao = video.closest('[data-vitrine]')?.id === id;
+    if (daSecao && video.paused) {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    } else if (!daSecao && !video.paused) {
+      video.pause();
+    }
+  });
+}
+
+/** Marca o projeto cuja posição real (pin-spacer) já passou do meio da tela e toca o vídeo dele. */
 function trilha(lenis: Lenis) {
   const nav = document.querySelector('.trilha');
   const area = document.getElementById('projetos');
   const secoes = gsap.utils.toArray<HTMLElement>('[data-vitrine]');
   let atual: string | null = null;
+  let tocando: string | null = null;
   const atualizar = () => {
     const meio = innerHeight / 2;
     let ativo: string | null = null;
     for (const secao of secoes) if (posicaoReal(secao).getBoundingClientRect().top <= meio) ativo = secao.id;
     if (ativo && ativo !== atual) marcarNaTrilha(ativo);
     atual = ativo;
-    if (nav && area) {
+    let naTela = false;
+    if (area) {
       const r = area.getBoundingClientRect();
-      nav.classList.toggle('visivel', r.top < meio && r.bottom > meio);
+      naTela = r.top < meio && r.bottom > meio;
+      nav?.classList.toggle('visivel', naTela);
+    }
+    // Fora da área de projetos (abertura, "Sobre"), nenhum vídeo toca
+    const deveTocar = naTela ? ativo : null;
+    if (deveTocar !== tocando) {
+      tocando = deveTocar;
+      tocarSo(deveTocar);
     }
   };
   lenis.on('scroll', atualizar);

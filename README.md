@@ -36,6 +36,11 @@ status: ativo           # ativo | beta | em-desenvolvimento | arquivado
 teaser: false           # true = sneak peek, sem links nem downloads
 rascunho: false         # true esconde o projeto do site
 capa: ../../assets/projetos/meu-app.png   # imagem em src/assets/
+video:                  # opcional: mini vídeo do app funcionando
+  src: /videos/meu-app.mp4      # arquivo em public/videos/ (MP4 H.264, sem áudio)
+  poster: /videos/meu-app.webp  # quadro mostrado enquanto carrega
+  largura: 1280
+  altura: 800
 galeria:
   - src: ../../assets/projetos/meu-app-2.png
     legenda: Outra tela

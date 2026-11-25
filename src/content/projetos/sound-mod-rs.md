@@ -13,6 +13,11 @@ data: 2026-11-21
 ordem: 1
 cor: '#e879f9'
 capa: ../../assets/projetos/sound-mod-rs.png
+video:
+  src: /videos/sound-mod-rs.mp4
+  poster: /videos/sound-mod-rs.webp
+  largura: 1280
+  altura: 800
 links:
   - rotulo: Código no GitHub
     url: https://github.com/renanzm/sound-mod-rs

@@ -47,7 +47,24 @@ const externo = (url: string) => /^https?:\/\//.test(url);
     </header>
 
     {
-      d.capa && (
+      d.video ? (
+        <div class="container">
+          <div class="capa moldura com-video" style={`aspect-ratio: ${d.video.largura} / ${d.video.altura}`}>
+            <video
+              src={d.video.src}
+              poster={d.video.poster}
+              width={d.video.largura}
+              height={d.video.altura}
+              muted
+              loop
+              playsinline
+              preload="metadata"
+              aria-label={`Vídeo curto de ${d.titulo} funcionando`}
+              data-video-topo
+            />
+          </div>
+        </div>
+      ) : d.capa && (
         <div class="container">
           <div
             class:list={['capa', 'moldura', larga ? 'cobrir' : 'conter']}
@@ -183,7 +200,23 @@ const externo = (url: string) => /^https?:\/\//.test(url);
   </article>
 </Base>
 
+<script>
+  // Vídeo do topo: toca sozinho, sem som; quem prefere menos movimento recebe o pôster com controles
+  const video = document.querySelector<HTMLVideoElement>('video[data-video-topo]');
+  if (video) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) video.controls = true;
+    else video.play().catch(() => (video.controls = true));
+  }
+</script>
+
 <style>
+  .com-video video {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
   article {
     padding: calc(var(--header) + 40px) 0 64px;
   }

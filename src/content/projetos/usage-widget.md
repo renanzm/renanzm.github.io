@@ -12,6 +12,11 @@ data: 2026-11-24
 ordem: 2
 cor: '#34d399'
 capa: ../../assets/projetos/usage-widget.png
+video:
+  src: /videos/usage-widget.mp4
+  poster: /videos/usage-widget.webp
+  largura: 1280
+  altura: 800
 galeria:
   - src: ../../assets/projetos/usage-widget.png
     legenda: Tema escuro
