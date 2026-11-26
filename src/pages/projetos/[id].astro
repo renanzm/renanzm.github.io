@@ -66,6 +66,7 @@ const externo = (url: string) => /^https?:\/\//.test(url);
               aria-label={`Vídeo curto de ${d.titulo} funcionando`}
               data-video-topo
             />
+            <canvas class="holo" aria-hidden="true" />
           </div>
         </div>
       ) : d.capa && (
@@ -82,6 +83,7 @@ const externo = (url: string) => /^https?:\/\//.test(url);
               sizes="(min-width: 1200px) 1136px, 100vw"
               loading="eager"
             />
+            <canvas class="holo" aria-hidden="true" />
           </div>
         </div>
       )
@@ -233,6 +235,21 @@ const externo = (url: string) => /^https?:\/\//.test(url);
       })
       .catch((causa: unknown) => console.warn('Fundo de luz indisponível; a página segue com o fundo preto.', causa));
   }
+
+  // Foil holográfico na capa (o mesmo das prévias da página inicial): só com WebGPU
+  const holo = document.querySelector<HTMLCanvasElement>('.capa canvas.holo');
+  const capa = holo?.parentElement;
+  const palco = holo?.closest<HTMLElement>('.palco3d');
+  if (holo && capa && palco && 'gpu' in navigator) {
+    import('../../landing/holografico/renderer')
+      .then(({ criarCartaoHolografico }) => {
+        const cartao = criarCartaoHolografico(holo, palco);
+        addEventListener('pagehide', (e) => !e.persisted && cartao.dispose());
+        // O foil assume a luz da moldura: a de CSS sai para não somar as duas
+        return cartao.ready.then(() => capa.classList.add('holo-ativo'));
+      })
+      .catch((causa: unknown) => console.warn('Cartão holográfico indisponível; a capa fica com a luz em CSS.', causa));
+  }
 </script>
 
 <style>
@@ -281,6 +298,20 @@ const externo = (url: string) => /^https?:\/\//.test(url);
   }
   .fundo-luz.pronto ~ article .escurecido::before {
     opacity: 1;
+  }
+  /* Foil holográfico por cima da capa: o shader sai preto onde não há brilho e, no modo screen,
+     preto não muda nada */
+  .holo {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .capa.holo-ativo :global(.luz) {
+    display: none;
   }
   .com-video video {
     position: relative;

@@ -34,8 +34,9 @@ export function abertura(raiz: HTMLElement) {
         x: (_: number, el: HTMLElement) => (el.parentElement?.offsetWidth ?? 0) + sobraDaFaixa(el),
         xPercent: 0,
         skewX: -INCLINACAO,
-        duration: 0.9,
-        ease: CURVA.suave,
+        // Devagar o bastante para ser visto: a faixa leva quase um segundo para cruzar o rosto
+        duration: 1.8,
+        ease: 'sine.inOut',
       },
       1.25,
     )
