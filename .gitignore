@@ -8,3 +8,13 @@ dist/
 
 # Imagem de conferência do vetorizador da assinatura
 tools/assinatura/depuracao.png
+
+# Exemplo original do vgpu, baixado como referência (npx vgpu examples ...); o site usa a
+# versão adaptada em src/landing/holografico
+holographic-card/
+
+# Exemplo original do vgpu (Radiance Cascades), só como referência
+radiance-cascades/
+
+# Imagem de conferência da máscara do retrato
+tools/retrato/depuracao.png

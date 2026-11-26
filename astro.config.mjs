@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
+import { wgslVitePlugin } from '@vgpu/wgsl/loader-vite';
 
 export default defineConfig({
   // GitHub Pages: o repositório precisa se chamar renanzm.github.io.
@@ -10,6 +11,7 @@ export default defineConfig({
   // A página inicial é uma ilha React (src/landing); o resto do site continua em Astro
   integrations: [react()],
   vite: {
-    plugins: [tailwindcss()],
+    // wgslVitePlugin: prepara os shaders .wgsl do vgpu no build (cartão holográfico dos projetos)
+    plugins: [tailwindcss(), wgslVitePlugin()],
   },
 });

@@ -21,7 +21,30 @@ A página inicial é uma ilha React (`src/landing/`) dentro do Astro, estilizada
 
 - `src/landing/movimento/orquestrar.ts` decide o que anima, em que ordem e em quais telas. As curvas e durações usadas em todas as animações ficam em `ritmo.ts`.
 - Quem ativa "reduzir movimento" no sistema recebe a página estática, com tudo visível e os vídeos parados.
-- O retrato da abertura fica em `src/assets/hero/retrato.webp`.
+- O retrato da abertura fica em `src/assets/hero/retrato.webp`. O busto é recortado dele por uma máscara, para os riscos de luz aparecerem atrás. O recorte vem de `tools/retrato/busto.webp`: o mesmo retrato, do mesmo tamanho, com o fundo tirado num editor de imagem (fundo transparente ou branco). Para ajustar o recorte, edite esse arquivo e gere a máscara de novo:
+
+  ```powershell
+  node tools/retrato/mascara.mjs --depurar
+  ```
+
+  O script grava em `public/hero/` a máscara do busto (`busto-mascara.webp`) e o halo escuro em volta dele (`busto-sombra.webp`). Com `--depurar`, grava também `tools/retrato/depuracao.png`, com o busto recortado sobre um fundo colorido. Ao trocar o retrato, troque também o `busto.webp`.
+- Ao abrir a página, um brilho atravessa o busto: a faixa `.hero-busto-faixa` de `landing.css`, levada pela linha do tempo de `movimento/abertura.ts`.
+
+### Efeitos em WebGPU
+
+Os efeitos abaixo são adaptados de exemplos do [vgpu](https://vgpu.sh) e só são baixados em navegadores com WebGPU. Sem WebGPU, eles simplesmente não aparecem: a abertura fica com o fundo preto, a moldura dos projetos fica com a luz em CSS e as páginas de projeto ficam com o fundo liso.
+
+- **Riscos de luz na abertura** (`src/efeitos/radiancia/riscos-de-luz.ts`, exemplo "Radiance Cascades"): arrastar o mouse no fundo, atrás do busto, risca uma linha que vira luz e ilumina a abertura em volta, com as sombras suaves que os riscos fazem uns nos outros. Cada risco fica aceso um pouco e apaga sozinho. Força, cor e alcance da luz: `EXPOSICAO`, `RADIANCIA` e `ALCANCE`; quanto o risco dura: `ACESO` e `APAGANDO`. Só com mouse ou caneta (no toque, arrastar continua rolando a página) e sem "reduzir movimento".
+- **Fundo das páginas de projeto** (`src/efeitos/radiancia/fundo-projeto.ts`, mesmo exemplo): uma grade escura iluminada por um triângulo de luz na cor do projeto (campo `cor`), no canto de cima. Arrastar o mouse fora do texto pinta mais luz. A luz é calculada em meia resolução, e os traços e o triângulo são redesenhados nítidos por cima, na resolução da tela. Os textos ficam sobre seções escurecidas (a classe `escurecido` em `src/pages/projetos/[id].astro`), para a pintura não atrapalhar a leitura. Força da luz: `INTENSIDADE`; espessura do traço: `RAIO_TRACO`.
+- **Cartão holográfico** (`src/landing/holografico/`, exemplo "Holographic Card"): quando o cursor se aproxima da prévia de um app, aparece um foil holográfico, com gravações onduladas, um fractal triangular, luz perolada e difração. Só é baixado quando um projeto chega perto da tela. Força: `INTENSITY` em `holografico.wgsl`.
+
+Depois de mexer num shader, valide num dispositivo WebGPU de verdade (o build só confere a sintaxe):
+
+```powershell
+npx vgpu check src/efeitos/radiancia/luz.wgsl --require-validation
+```
+
+Os exemplos originais ficam em `radiance-cascades/` e `holographic-card/`, fora do Git, só como referência. No Windows, `npx vgpu examples pull` não funciona; use `npx vgpu examples show <exemplo>` para listar os arquivos e `npx vgpu examples cat <exemplo> <arquivo>` para baixar cada um.
 
 ### Assinatura
 

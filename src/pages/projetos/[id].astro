@@ -31,8 +31,12 @@ const externo = (url: string) => /^https?:\/\//.test(url);
 ---
 
 <Base titulo={d.titulo} descricao={d.resumo} imagem={imagemSocial}>
+  <!-- Fundo de luz em WebGPU (efeitos/radiancia/fundo-projeto.ts) e, por cima, os traços nítidos
+       em canvas 2D; sem WebGPU, os dois ficam invisíveis -->
+  <canvas class="fundo-luz" data-cor={d.cor} aria-hidden="true"></canvas>
+  <canvas class="fundo-tinta" aria-hidden="true"></canvas>
   <article style={`--c: ${d.cor}`}>
-    <header class="container cab">
+    <header class="container cab escurecido">
       <a href={voltar} class="voltar"><span aria-hidden="true">←</span> {d.status === 'arquivado' ? 'Índice' : 'Projetos'}</a>
       <div class="meta">
         <span class="status">{d.teaser ? `Sneak peek · ${rotuloStatus[d.status]}` : rotuloStatus[d.status]}</span>
@@ -84,7 +88,7 @@ const externo = (url: string) => /^https?:\/\//.test(url);
     }
 
     <div class="container corpo">
-      <aside class="painel">
+      <aside class="painel escurecido">
         {
           d.teaser ? (
             <div class="bloco">
@@ -150,14 +154,14 @@ const externo = (url: string) => /^https?:\/\//.test(url);
         }
       </aside>
 
-      <div class="conteudo">
+      <div class="conteudo escurecido">
         <Content />
       </div>
     </div>
 
     {
       d.galeria.length > 0 && (
-        <section class="container galeria" aria-label="Galeria">
+        <section class="container galeria escurecido" aria-label="Galeria">
           <p class="rotulo">Galeria</p>
           <div class="grade-galeria">
             {d.galeria.map((g) => (
@@ -212,9 +216,72 @@ const externo = (url: string) => /^https?:\/\//.test(url);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) video.controls = true;
     else video.play().catch(() => (video.controls = true));
   }
+
+  // Fundo de luz (Radiance Cascades do vgpu): só em navegador com WebGPU; o vgpu é baixado aqui
+  const fundo = document.querySelector<HTMLCanvasElement>('canvas.fundo-luz');
+  const tinta = document.querySelector<HTMLCanvasElement>('canvas.fundo-tinta');
+  if (fundo && tinta && 'gpu' in navigator) {
+    import('../../efeitos/radiancia/fundo-projeto')
+      .then(({ criarFundoDeLuz }) => {
+        const luz = criarFundoDeLuz({ canvas: fundo, tinta, cor: fundo.dataset.cor ?? '#7dd3a8' });
+        // Saindo da página de verdade (não para o cache de voltar), libera a GPU
+        addEventListener('pagehide', (e) => !e.persisted && luz.dispose());
+        return luz.ready.then(() => {
+          fundo.classList.add('pronto');
+          tinta.classList.add('pronto');
+        });
+      })
+      .catch((causa: unknown) => console.warn('Fundo de luz indisponível; a página segue com o fundo preto.', causa));
+  }
 </script>
 
 <style>
+  /* Atrás de tudo, do tamanho da tela grande (100lvh: não muda quando a barra do celular some):
+     a luz e, por cima dela, os traços nítidos */
+  .fundo-luz,
+  .fundo-tinta {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100lvh;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-suave);
+  }
+  .fundo-luz.pronto,
+  .fundo-tinta.pronto {
+    opacity: 1;
+  }
+  /* Seções escurecidas: um vidro escuro atrás dos textos, para a luz pintada no fundo não
+     atrapalhar a leitura. Sai um pouco além do texto, sem mudar o layout, e só aparece com o fundo
+     de luz ligado (sem WebGPU, a página fica como sempre foi). Vem antes das outras regras para o
+     sticky do painel, mais abaixo, valer sobre o relative daqui. --escuro-topo pula o espaço que a
+     seção deixa em cima do conteúdo */
+  .escurecido {
+    position: relative;
+  }
+  .escurecido::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: calc(var(--escuro-topo, 0px) - 24px) calc(-1 * min(28px, var(--margem))) -24px;
+    border: 1px solid rgb(255 255 255 / 0.06);
+    border-radius: 20px;
+    background: rgb(0 0 0 / 0.74);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-suave);
+  }
+  .container.escurecido::before {
+    left: max(0px, calc(var(--margem) - 28px));
+    right: max(0px, calc(var(--margem) - 28px));
+  }
+  .fundo-luz.pronto ~ article .escurecido::before {
+    opacity: 1;
+  }
   .com-video video {
     position: relative;
     display: block;
@@ -471,6 +538,7 @@ const externo = (url: string) => /^https?:\/\//.test(url);
   }
 
   .galeria {
+    --escuro-topo: 72px;
     padding-top: 72px;
   }
   .grade-galeria {
@@ -512,12 +580,16 @@ const externo = (url: string) => /^https?:\/\//.test(url);
     padding: 22px 24px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
+    /* Vidro escuro, como as seções escurecidas: sobre o fundo preto, não muda nada */
+    background: rgb(0 0 0 / 0.74);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     text-decoration: none;
     transition: border-color 0.2s, background 0.2s;
   }
   .vizinhos a:hover {
     border-color: color-mix(in srgb, var(--c) 55%, transparent);
-    background: color-mix(in srgb, var(--c) 5%, transparent);
+    background: color-mix(in srgb, var(--c) 6%, rgb(0 0 0 / 0.8));
   }
   .vizinhos .proximo {
     grid-column: 2;

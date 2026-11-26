@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import svgFocus from '../assets/projetos/focus-temp-tool.svg?raw';
+import { CartaoHolografico } from './CartaoHolografico';
 import type { ProjetoCartao } from './tipos';
 
 const dois = (n: number) => String(n).padStart(2, '0');
@@ -113,6 +114,7 @@ export function Vitrine({ projeto: p, indice, total }: Props) {
             ) : (
               <span className="sem-capa">{p.titulo}</span>
             )}
+            <CartaoHolografico />
             {p.teaser && <span className="selo mono">em breve</span>}
           </a>
         </div>

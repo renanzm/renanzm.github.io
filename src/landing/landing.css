@@ -62,17 +62,95 @@
 /* Câmera um pouco recuada: a foto ocupa 90% da altura da tela, então o rosto fica menor.
    A largura continua de ponta a ponta (no celular o recorte passa pelos ombros, que não são
    pretos); a sobra fica em cima e embaixo, onde a foto já é preta como o fundo */
-.hero-foto picture {
+.hero-busto {
   position: absolute;
   inset: 4% 0 6%;
+  /* Os ombros vão até o pé da foto: ali o busto se dissolve, em vez de terminar numa linha reta
+     sobre a luz do fundo */
+  -webkit-mask: linear-gradient(to top, transparent, #000 9%);
+  mask: linear-gradient(to top, transparent, #000 9%);
 }
-.hero-foto img {
+.hero-busto picture,
+.hero-busto img {
+  display: block;
   width: 100%;
   height: 100%;
+}
+.hero-busto img {
   object-fit: cover;
   object-position: 50% 16%;
 }
-/* Luz da cena: topo escuro para o cabeçalho, vinheta e o pé da foto dissolvendo no preto */
+/* O busto recortado (máscara gerada por tools/retrato/mascara.mjs): atrás dele, os riscos de luz.
+   A máscara usa o mesmo encaixe da foto (cover, 50% 16%) para coincidir com ela */
+.hero-busto img,
+.hero-busto-brilho,
+.hero-busto .hero-gradiente {
+  -webkit-mask: url('/hero/busto-mascara.webp') 50% 16% / cover no-repeat;
+  mask: url('/hero/busto-mascara.webp') 50% 16% / cover no-repeat;
+}
+/* Halo escuro em volta do busto: separa a silhueta da luz do fundo. O cabelo quase encosta no
+   topo da foto, e o halo acabaria ali numa linha reta: ele some antes, num degradê */
+.hero-busto-halo {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0.9;
+  -webkit-mask:
+    url('/hero/busto-sombra.webp') 50% 16% / cover no-repeat,
+    linear-gradient(transparent, #000 10%);
+  -webkit-mask-composite: source-in;
+  mask:
+    url('/hero/busto-sombra.webp') 50% 16% / cover no-repeat,
+    linear-gradient(transparent, #000 10%);
+  mask-composite: intersect;
+}
+/* Brilho que atravessa o busto na abertura (a faixa é levada pela GSAP, ver abertura.ts).
+   Em overlay, clareia a pele e o cabelo e deixa o preto da camiseta preto */
+.hero-busto-brilho {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.hero-busto-faixa {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 36%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.12) 30%,
+    rgb(255 255 255 / 0.95) 50%,
+    rgb(255 255 255 / 0.12) 70%,
+    transparent 100%
+  );
+  /* Fora do busto até a GSAP levar a faixa (e para sempre, com menos movimento) */
+  transform: translateX(-250%) skewX(-12deg);
+}
+/* Riscos de luz atrás do busto (efeitos/radiancia/riscos-de-luz.ts): a luz em WebGPU e, por
+   cima, o risco nítido em canvas 2D (em screen, o preto do risco apagado não muda nada). Sem
+   WebGPU, os canvas ficam vazios e o fundo é o preto da própria abertura, igual à foto */
+.hero-luz,
+.hero-riscos {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hero-riscos {
+  mix-blend-mode: screen;
+}
+/* Arrastar no fundo risca: a mira avisa; nos textos, o cursor de sempre */
+.hero.com-riscos {
+  cursor: crosshair;
+}
+.hero.com-riscos p {
+  cursor: auto;
+}
+/* Luz da cena sobre o busto: topo escuro, vinheta e o pé da foto dissolvendo no preto. Só no
+   busto (com a mesma máscara): os riscos de luz do fundo não escurecem */
 .hero-gradiente {
   pointer-events: none;
   background:
@@ -359,7 +437,23 @@
   font-size: 2rem;
   color: var(--muted);
 }
+/* Foil holográfico (WebGPU, ver CartaoHolografico.tsx) por cima da prévia do app. O shader sai
+   preto onde não há brilho, e no modo screen preto não muda nada; só a luz e o foil aparecem */
+.holo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+/* Com o foil ligado, a luz em CSS da moldura sai: o foil já traz a luz que segue o cursor */
+.midia.holo-ativo .luz {
+  display: none;
+}
 .selo {
+  z-index: 3;
   position: absolute;
   top: 16px;
   right: 16px;

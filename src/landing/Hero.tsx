@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Assinatura } from './Assinatura';
 import type { Foto } from './tipos';
 
@@ -14,29 +15,76 @@ interface Props {
   foto: Foto;
 }
 
-/** Abertura: o retrato em tela cheia e a assinatura, em camadas que se movem em velocidades
- * diferentes na rolagem (foto ao fundo, assinatura no meio, textos na frente). */
+/** Liga os riscos de luz no fundo da abertura (WebGPU): arrastar o mouse no fundo risca uma
+ * linha de luz que apaga sozinha. Só em navegador com WebGPU e sem "reduzir movimento"; sem eles,
+ * o fundo fica preto como na foto. */
+function useRiscosDeLuz(
+  hero: React.RefObject<HTMLElement | null>,
+  luz: React.RefObject<HTMLCanvasElement | null>,
+  riscos: React.RefObject<HTMLCanvasElement | null>,
+) {
+  useEffect(() => {
+    const area = hero.current;
+    const canvas = luz.current;
+    const tinta = riscos.current;
+    if (!area || !canvas || !tinta) return;
+    if (!('gpu' in navigator) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let mounted = true;
+    let dispose: (() => void) | undefined;
+    import('../efeitos/radiancia/riscos-de-luz')
+      .then(({ criarRiscosDeLuz }) => {
+        if (!mounted) return;
+        const efeito = criarRiscosDeLuz({ canvas, tinta, area });
+        dispose = efeito.dispose;
+        return efeito.ready.then(() => mounted && area.classList.add('com-riscos'));
+      })
+      .catch((cause: unknown) => {
+        if (mounted) console.warn('Riscos de luz indisponíveis; a abertura segue sem eles.', cause);
+      });
+    return () => {
+      mounted = false;
+      area.classList.remove('com-riscos');
+      dispose?.();
+    };
+  }, [hero, luz, riscos]);
+}
+
+/** Abertura: o retrato e a assinatura, em camadas que se movem em velocidades diferentes na
+ * rolagem. Atrás do busto recortado, o fundo onde o visitante risca luz. */
 export function Hero({ nome, cargo, empresa, cidade, chamada, foto }: Props) {
+  const hero = useRef<HTMLElement>(null);
+  const luz = useRef<HTMLCanvasElement>(null);
+  const riscos = useRef<HTMLCanvasElement>(null);
+  useRiscosDeLuz(hero, luz, riscos);
+
   return (
-    <section className="hero" id="inicio" aria-labelledby="hero-nome">
+    <section ref={hero} className="hero" id="inicio" aria-labelledby="hero-nome">
+      <canvas ref={luz} className="hero-camada hero-luz" aria-hidden="true" />
+      <canvas ref={riscos} className="hero-camada hero-riscos" aria-hidden="true" />
       <div className="hero-camada hero-foto">
         <div className="hero-camada hero-foto-intro">
-          <picture>
-            <source type="image/avif" srcSet={foto.srcsetAvif} sizes={TAMANHOS} />
-            <source type="image/webp" srcSet={foto.srcsetWebp} sizes={TAMANHOS} />
-            <img
-              src={foto.src}
-              alt={foto.alt}
-              width={foto.largura}
-              height={foto.altura}
-              fetchPriority="high"
-              loading="eager"
-              decoding="async"
-            />
-          </picture>
+          <div className="hero-busto">
+            <div className="hero-busto-halo" aria-hidden="true" />
+            <picture>
+              <source type="image/avif" srcSet={foto.srcsetAvif} sizes={TAMANHOS} />
+              <source type="image/webp" srcSet={foto.srcsetWebp} sizes={TAMANHOS} />
+              <img
+                src={foto.src}
+                alt={foto.alt}
+                width={foto.largura}
+                height={foto.altura}
+                fetchPriority="high"
+                loading="eager"
+                decoding="async"
+              />
+            </picture>
+            <div className="hero-busto-brilho" aria-hidden="true">
+              <span className="hero-busto-faixa" />
+            </div>
+            <div className="hero-camada hero-gradiente" aria-hidden="true" />
+          </div>
         </div>
       </div>
-      <div className="hero-camada hero-gradiente" aria-hidden="true" />
       <div className="hero-camada hero-escuro" aria-hidden="true" />
       <div className="hero-camada hero-veu" aria-hidden="true" />
 
