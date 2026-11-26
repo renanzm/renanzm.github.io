@@ -1,10 +1,11 @@
 /* Música de fundo: a Lacrimosa do Réquiem de Mozart (Josef Krips, Filarmônica de Viena, 1950;
  * ver o README sobre a gravação), em loop, baixinho.
  *
- * O navegador não deixa um site começar a tocar som sozinho, então a música entra no primeiro
- * clique ou tecla na página. O botão "Som" do cabeçalho liga e desliga, e a escolha fica salva
- * (desligou, continua desligada nas próximas visitas). Ao trocar de página, a música volta do
- * ponto em que estava. O áudio só é baixado quando vai tocar. */
+ * A música tenta tocar assim que a página abre. O navegador só deixa quando a pessoa já
+ * interagiu com o site (ou com ele em visitas anteriores); se ele bloquear, a música entra no
+ * primeiro clique, toque ou tecla na página. O botão "Som" do cabeçalho liga e desliga, e a
+ * escolha fica salva (desligou, continua desligada nas próximas visitas). Ao trocar de página, a
+ * música volta do ponto em que estava. */
 
 const ARQUIVO = '/audio/lacrimosa.aac';
 /** Volume da música: fundo, não primeiro plano. */
@@ -13,6 +14,8 @@ const ENTRADA = 2;
 const SAIDA = 0.8;
 const CHAVE_PREFERENCIA = 'musica';
 const CHAVE_TEMPO = 'musica-tempo';
+/** Os gestos que o navegador aceita como permissão para tocar som (no toque, é ao soltar). */
+const GESTOS = ['pointerdown', 'pointerup', 'touchend', 'keydown'] as const;
 
 export function iniciarMusica() {
   const botao = document.querySelector<HTMLButtonElement>('[data-som]');
@@ -41,20 +44,21 @@ export function iniciarMusica() {
     return audio;
   };
 
-  /** Leva o volume até `alvo` em `segundos`; chegando a zero, pausa. */
+  /** Leva o volume até `alvo` em `segundos`; chegando a zero, pausa. Com timers, e não quadros:
+   * numa aba em segundo plano os quadros param, e a música não pararia de tocar. */
   const levar = (alvo: number, segundos: number) => {
     const a = audio;
     if (!a) return;
-    cancelAnimationFrame(fade);
+    clearTimeout(fade);
     const de = a.volume;
     const inicio = performance.now();
-    const passo = (agora: number) => {
-      const t = Math.min(1, (agora - inicio) / 1000 / segundos);
+    const passo = () => {
+      const t = Math.min(1, (performance.now() - inicio) / 1000 / segundos);
       a.volume = de + (alvo - de) * t;
-      if (t < 1) fade = requestAnimationFrame(passo);
+      if (t < 1) fade = window.setTimeout(passo, 30);
       else if (alvo === 0) a.pause();
     };
-    fade = requestAnimationFrame(passo);
+    passo();
   };
 
   const tocar = async () => {
@@ -78,13 +82,11 @@ export function iniciarMusica() {
   const esperar = () => {
     if (esperando) return;
     esperando = true;
-    addEventListener('pointerdown', primeiraInteracao, true);
-    addEventListener('keydown', primeiraInteracao, true);
+    for (const tipo of GESTOS) addEventListener(tipo, primeiraInteracao, true);
   };
   const soltarEspera = () => {
     esperando = false;
-    removeEventListener('pointerdown', primeiraInteracao, true);
-    removeEventListener('keydown', primeiraInteracao, true);
+    for (const tipo of GESTOS) removeEventListener(tipo, primeiraInteracao, true);
   };
 
   botao.addEventListener('click', () => {
@@ -105,9 +107,6 @@ export function iniciarMusica() {
   });
 
   mostrar();
-  if (!ligada()) return;
-  // Com o tempo guardado, a pessoa já estava ouvindo: tenta seguir tocando (o navegador pode
-  // permitir, por ela já ter interagido com o site); sem ele, espera o primeiro clique
-  if (sessionStorage.getItem(CHAVE_TEMPO)) void tocar();
-  else esperar();
+  // Tenta já ao abrir; se o navegador bloquear, tocar() espera o primeiro gesto
+  if (ligada()) void tocar();
 }

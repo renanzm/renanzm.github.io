@@ -58,7 +58,7 @@ O script grava `src/landing/tracos-assinatura.ts` e, com `--depurar`, a imagem `
 
 ## Música de fundo
 
-O site toca em loop a Lacrimosa do Réquiem de Mozart (`public/audio/lacrimosa.aac`). O navegador não deixa um site começar a tocar som sozinho, então a música entra no primeiro clique ou tecla na página. O botão "Som" do cabeçalho liga e desliga, e a escolha fica salva; ao trocar de página, a música continua do ponto em que estava. O código fica em `src/scripts/musica.ts` (volume em `VOLUME`).
+O site toca em loop a Lacrimosa do Réquiem de Mozart (`public/audio/lacrimosa.aac`). A música tenta tocar assim que o site abre. Os navegadores só deixam um site tocar som sozinho quando a pessoa já interagiu com ele; quando bloqueiam, a música entra no primeiro clique, toque ou tecla na página. O botão "Som" do cabeçalho liga e desliga, e a escolha fica salva; ao trocar de página, a música continua do ponto em que estava. O código fica em `src/scripts/musica.ts` (volume em `VOLUME`).
 
 A gravação é a de Josef Krips com a Filarmônica de Viena e os Meninos Cantores de Viena (Decca, 1950), do [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Mozart_-_Requiem_(Krips)_-_VIII._Lacrimosa.flac). A obra é de domínio público, mas cada gravação tem direitos próprios: esta é de domínio público no Brasil e na União Europeia (fonogramas com mais de 70 anos), mas não nos EUA, onde gravações de 1950 continuam protegidas até 2060. O arquivo foi convertido do FLAC original para AAC de 128 kbps, sem o silêncio das pontas e com entrada e saída suaves para o loop.
 
