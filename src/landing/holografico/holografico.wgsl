@@ -1,6 +1,6 @@
 // Adaptado do exemplo "Holographic Card" do vgpu (https://vgpu.sh, revisão af8ab2106af8…), que
 // desenha um cartão de grafite com gravações holográficas reveladas pela aproximação do cursor.
-// As funções de material abaixo (difração, perolado, gravações, fractal) são as do exemplo, sem
+// As funções de material abaixo (difração, perolado, gravações) são as do exemplo, sem
 // mudanças. O que mudou fica todo em fs_main:
 //   - o cartão ocupa o canvas inteiro, na proporção da moldura do projeto (o exemplo desenhava um
 //     cartão retrato no meio de um fundo, com sombra);
@@ -8,7 +8,8 @@
 //     difração, e não a geometria (assim o brilho fica preso à imagem do app);
 //   - o cartão não tem cor própria: sai preto onde não há brilho, e a página mistura o canvas sobre
 //     o vídeo do app com mix-blend-mode: screen (preto não muda nada);
-//   - o contorno do triângulo e a cruz de registro só aparecem com o cursor perto;
+//   - o padrão é só uma marca d'água: as gravações onduladas no cartão inteiro, discretas, sem o
+//     triângulo fractal, os contornos, a cruz e as marcas de registro do exemplo;
 //   - sem o texto do exemplo ("vgpu. Holographic..."), que era a marca dele.
 struct Params {
   resolution: vec2f,
@@ -23,11 +24,6 @@ struct Params {
 fn roundedBox(p: vec2f, halfSize: vec2f, radius: f32) -> f32 {
   let q = abs(p) - halfSize + radius;
   return length(max(q, vec2f(0))) + min(max(q.x, q.y), 0.0) - radius;
-}
-
-fn segment(p: vec2f, a: vec2f, b: vec2f) -> f32 {
-  let v = b - a;
-  return length(p - a - v * clamp(dot(p - a, v) / dot(v, v), 0.0, 1.0));
 }
 
 fn stroke(distance: f32, width: f32, aa: f32) -> f32 {
@@ -81,50 +77,6 @@ fn etchedPhase(p: vec2f) -> f32 {
   return radius * 142.0 + sin(atan2(q.y, q.x) * 3.0 + radius * 8.0) * 1.7;
 }
 
-// Signed edge distance inside an equilateral triangle centered at its centroid.
-fn triangleBoundary(p: vec2f, height: f32) -> f32 {
-  return max((abs(p.x) * sqrt(3.0) - p.y - height * (2.0 / 3.0)) * 0.5, p.y - height / 3.0);
-}
-
-fn triangleGrooves(edgeDistances: vec3f) -> vec2f {
-  if (edgeDistances.x <= edgeDistances.y && edgeDistances.x <= edgeDistances.z) {
-    return vec2f(0, -1);
-  }
-  if (edgeDistances.y <= edgeDistances.z) {
-    return vec2f(-sqrt(3.0) * 0.5, 0.5);
-  }
-  return vec2f(sqrt(3.0) * 0.5, 0.5);
-}
-
-struct FractalMark {
-  coverage: f32,
-  across: vec2f,
-}
-
-// Recursive triangular engraving, with screen-space antialiasing at every scale.
-fn fractalEngraving(p: vec2f, halfWidth: f32, height: f32, aa: f32) -> FractalMark {
-  let apex = (height / 3.0 - p.y) / height;
-  var barycentric = vec3f(apex, (1.0 - apex - p.x / halfWidth) * 0.5, (1.0 - apex + p.x / halfWidth) * 0.5);
-  var cellHeight = height;
-  for (var level = 0; level < 6; level++) {
-    let largest = max(barycentric.x, max(barycentric.y, barycentric.z));
-    if (largest < 0.5) {
-      // Each removed central triangle leaves a fine foil border.
-      return FractalMark(stroke((0.5 - largest) * cellHeight, 0.0008, aa * 0.65), triangleGrooves(0.5 - barycentric));
-    }
-    var corner = vec3f(0, 0, 1);
-    if (barycentric.x >= barycentric.y && barycentric.x >= barycentric.z) {
-      corner = vec3f(1, 0, 0);
-    } else if (barycentric.y >= barycentric.z) {
-      corner = vec3f(0, 1, 0);
-    }
-    barycentric = barycentric * 2.0 - corner;
-    cellHeight *= 0.5;
-  }
-  let leafEdge = min(barycentric.x, min(barycentric.y, barycentric.z)) * cellHeight;
-  return FractalMark(stroke(leafEdge, 0.0006, aa * 0.5) * 0.65, triangleGrooves(barycentric));
-}
-
 // Força geral do brilho sobre a imagem do app
 const INTENSITY: f32 = 0.75;
 
@@ -169,19 +121,8 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   color += max(noise, 0.0) * light * 0.085;
   color += light * (vec3f(0.045) + tint * 0.065);
 
-  let halfWidth = 0.38;
-  let triangleHeight = halfWidth * sqrt(3.0);
-  let top = vec2f(0, -triangleHeight * (2.0 / 3.0));
-  let left = vec2f(-halfWidth, triangleHeight / 3.0);
-  let rightCorner = vec2f(halfWidth, triangleHeight / 3.0);
-  let triangleDistance = min(segment(p, top, left), min(segment(p, left, rightCorner), segment(p, rightCorner, top)));
-  let innerBoundary = triangleBoundary(p, triangleHeight);
-  let outerScale = 1.12;
-  let outerBoundary = triangleBoundary(p, triangleHeight * outerScale);
-  let inside = 1.0 - smoothstep(-aa * 1.5, -aa * 0.5, innerBoundary);
-  let outside = smoothstep(aa * 0.5, aa * 1.5, outerBoundary);
-
-  // Separate engravings leave a clear gap between the two outlines.
+  // Marca d'água: só as gravações onduladas do exemplo, no cartão inteiro e mais discretas (sem o
+  // triângulo fractal, os contornos, a cruz e as marcas de registro do exemplo)
   let contour = etchedPhase(p);
   // Transform screen derivatives back into the card plane: microscopic grooves
   // follow the visible contours, but their 1.65um spacing is independent of zoom.
@@ -189,64 +130,29 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let dy = dpdy(p);
   let gradient = vec2f(dpdx(contour) * dy.y - dpdy(contour) * dx.y, dpdy(contour) * dx.x - dpdx(contour) * dy.x);
   let across = gradient / max(length(gradient), 0.00000001);
-  let outerDiffraction = diffraction(across, lightAndView, 1.65) * illumination;
-  let contours = stroke(sin(contour), 0.06, min(fwidth(contour), 1.0));
-  let reveal = hover * (0.06 + 0.24 * spotlight + light * 1.15);
-  let fractal = fractalEngraving(p, halfWidth, triangleHeight, aa);
-  let innerDiffraction = diffraction(fractal.across, lightAndView, 1.35) * illumination;
+  let grooveDiffraction = diffraction(across, lightAndView, 1.65) * illumination;
+  let contours = stroke(sin(contour), 0.05, min(fwidth(contour), 1.0));
+  // Quase nada fora da luz; a marca aparece onde o cursor passa
+  let reveal = hover * (0.02 + 0.12 * spotlight + light * 0.7);
   let pearlPhase = dot(lightAndView, vec2f(0.48, -0.32)) + p.y * 0.32 + contour * 0.003;
-  let outerPearl = pearlColor(pearlPhase);
-  let innerPearl = pearlColor(pearlPhase + dot(fractal.across, lightAndView) * 0.32 + 0.12);
-  // Color washes over the material between etched lines, with a narrower silver
-  // flash moving through it. Both layers respect the empty gap between outlines.
-  let pearl = outerPearl * outside + innerPearl * inside;
-  color += pearl * light * 0.24;
-  color += (pearl * 0.5 + vec3f(0.5) * (inside + outside)) * glint * spotlight * hover * 0.12;
+  let pearl = pearlColor(pearlPhase);
+  color += pearl * light * 0.2;
+  color += (pearl * 0.5 + vec3f(0.5)) * glint * spotlight * hover * 0.1;
   let sparkle = pow(max(noise + 0.5, 0.0), 24.0) * glint * spotlight * hover;
-  color += pearl * sparkle * 0.22;
-  let outerFoil = vec3f(0.12, 0.14, 0.18) + outerPearl * 0.65 + outerDiffraction * 0.12;
-  let innerFoil = vec3f(0.12, 0.14, 0.18) + innerPearl * 0.65 + innerDiffraction * 0.12;
-  color += (contours * 0.65 * outside * outerFoil + fractal.coverage * inside * innerFoil) * reveal;
+  color += pearl * sparkle * 0.18;
+  let foil = vec3f(0.12, 0.14, 0.18) + pearl * 0.65 + grooveDiffraction * 0.12;
+  color += contours * 0.5 * foil * reveal;
 
-  // A delicate spectral echo stays clipped to the same engraving regions.
+  // Um eco espectral fino, deslocado com a inclinação, nas mesmas gravações
   let foilOffset = vec2f(0.007, -0.004) + params.tilt * 0.012;
-  let foilPoint = p - foilOffset;
-  let foilPhase = etchedPhase(foilPoint);
+  let foilPhase = etchedPhase(p - foilOffset);
   let foilLines = stroke(sin(foilPhase), 0.025, min(fwidth(foilPhase), 1.0));
-  let foilFractal = fractalEngraving(foilPoint, halfWidth, triangleHeight, aa);
-  let echoDiffraction = diffraction(foilFractal.across, lightAndView, 1.35) * illumination;
-  color += (foilLines * 0.65 * outside * (outerPearl + outerDiffraction * 0.2)
-    + foilFractal.coverage * inside * (innerPearl + echoDiffraction * 0.2)) * reveal * 0.22;
-  // Scale every vertex around the shared centroid, keeping the outer foil centered.
-  let foilEdge = min(segment(p, top * outerScale, left * outerScale), min(segment(p, left * outerScale, rightCorner * outerScale), segment(p, rightCorner * outerScale, top * outerScale)));
-  let foilAcross = triangleGrooves(vec3f(triangleHeight * outerScale / 3.0 - p.y,
-    (p.y + triangleHeight * outerScale * (2.0 / 3.0) - p.x * sqrt(3.0)) * 0.5,
-    (p.y + triangleHeight * outerScale * (2.0 / 3.0) + p.x * sqrt(3.0)) * 0.5));
-  let foilTint = outerPearl * 0.8 + vec3f(0.2) + diffraction(foilAcross, lightAndView, 1.65) * illumination * 0.15;
-  color += stroke(foilEdge, 0.0007, aa * 0.5) * foilTint * hover * (0.12 + light * 0.5);
-
-  // Sparse microdots and registration ticks emerge in the surrounding foil.
-  let grid = (fract((p + 1.0) * 20.0) - 0.5) / 20.0;
-  let dots = stroke(length(grid), 0.0008, aa * 0.4);
-  color += dots * outside * reveal * 0.17;
-  let guide = abs(p) - vec2f(0.49, 0.37);
-  let horizontal = stroke(guide.y, 0.0006, aa * 0.5) * (1.0 - smoothstep(0.012, 0.017, abs(guide.x)));
-  let vertical = stroke(guide.x, 0.0006, aa * 0.5) * (1.0 - smoothstep(0.012, 0.017, abs(guide.y)));
-  color += max(horizontal, vertical) * hover * (0.12 + light * 0.22);
-
-  // O contorno do triângulo, que no exemplo ficava sempre visível, aparece com o cursor
-  let outline = stroke(triangleDistance, 0.0012, aa * 0.65);
-  color += outline * (vec3f(0.29, 0.32, 0.36) * 0.55 + tint * light * 0.16) * hover;
-
-  // Cruz de registro no canto de cima à direita, à mesma distância do canto que no exemplo
-  let mark = p - vec2f(halfSize.x - 0.135, -(halfSize.y - 0.145));
-  let crossMark = min(segment(mark, vec2f(-0.024, 0), vec2f(0.024, 0)), segment(mark, vec2f(0, -0.024), vec2f(0, 0.024)));
-  color += vec3f(0.48, 0.51, 0.55) * stroke(crossMark, 0.0007, aa * 0.65) * hover;
+  color += foilLines * 0.5 * (pearl + grooveDiffraction * 0.2) * reveal * 0.2;
 
   // A borda da moldura acende perto da luz
   let rim = stroke(edge + 0.002, 0.0008, aa * 0.7);
   let rimLight = pow(max(0.0, 1.0 - length(delta) * 0.65), 3.0) * hover;
-  color += rim * (outerPearl * 0.7 + tint * 0.3) * rimLight * 0.6;
+  color += rim * (pearl * 0.7 + tint * 0.3) * rimLight * 0.6;
 
   return vec4f(color * INTENSITY, 1.0);
 }
