@@ -8,6 +8,8 @@ export const site = {
   // Frase curta do topo da página inicial
   chamada:
     'Trabalho com dados que não podem dar errado e transformo ideias em apps para Windows, ferramentas e, agora, um jogo.',
+  // Frase grande da seção "Sobre"; trechos entre *asteriscos* saem em itálico com serifa
+  declaracao: 'Dados que *não podem dar errado* e apps que resolvem *problemas reais*.',
   // Usada como descrição padrão das páginas (Google, redes sociais)
   descricao:
     'Desenvolvedor de software focado em migração e auditoria de dados, apps para Windows em Rust e Python e um jogo mobile em Godot.',

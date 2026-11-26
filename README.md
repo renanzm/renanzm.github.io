@@ -15,6 +15,24 @@ Abra http://localhost:4321.
 
 Nome, bio, stack e redes sociais ficam em `src/data/site.ts`. Os ícones do stack são da [skill-icons](https://github.com/tandpfun/skill-icons) (licença MIT) e ficam em `public/stack/`.
 
+## Página inicial
+
+A página inicial é uma ilha React (`src/landing/`) dentro do Astro, estilizada com Tailwind CSS e animada com GSAP (ScrollTrigger, SplitText e DrawSVG) sobre a rolagem suave da Lenis. As outras páginas continuam em Astro.
+
+- `src/landing/movimento/orquestrar.ts` decide o que anima, em que ordem e em quais telas. As curvas e durações usadas em todas as animações ficam em `ritmo.ts`.
+- Quem ativa "reduzir movimento" no sistema recebe a página estática, com tudo visível e os vídeos parados.
+- O retrato da abertura fica em `src/assets/hero/retrato.webp`.
+
+### Assinatura
+
+A assinatura da abertura é escrita traço a traço a partir de vetores gerados do PNG em `tools/assinatura/assinatura.png` (traço branco, fundo transparente). Para trocar a assinatura, substitua o PNG e rode:
+
+```powershell
+node tools/assinatura/vetorizar.mjs --depurar
+```
+
+O script grava `src/landing/tracos-assinatura.ts` e, com `--depurar`, a imagem `tools/assinatura/depuracao.png`, com cada traço numerado na ordem em que é desenhado.
+
 ## Adicionar um projeto
 
 Crie um arquivo `.md` em `src/content/projetos/`. O nome do arquivo vira o endereço da página (`meu-app.md` → `/projetos/meu-app`). Cada projeto não arquivado ganha uma seção de tela cheia na página inicial, na ordem do campo `ordem`.

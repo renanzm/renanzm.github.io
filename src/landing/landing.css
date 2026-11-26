@@ -1,0 +1,559 @@
+/* Página inicial: camadas da abertura, cartões dos projetos e os estados que a animação usa.
+ * Tipografia, espaçamento e grade ficam em classes do Tailwind nos componentes. */
+
+/* ------------------------------------------------------------------------------------------
+ * Antes da GSAP assumir (classe vai-animar, posta no <head>): a abertura começa no escuro.
+ * Se o script falhar, tudo aparece sozinho em 4 s.
+ * ---------------------------------------------------------------------------------------- */
+:root.vai-animar .hero-veu {
+  opacity: 1;
+  animation: abrir-luz 0s 4s forwards;
+}
+:root.vai-animar .hero-foto-intro {
+  transform: scale(1.14);
+  animation: assentar 0s 4s forwards;
+}
+:root.vai-animar .hero .assinatura path {
+  visibility: hidden;
+  animation: mostrar-traco 0s 4s forwards;
+}
+:root.vai-animar .hero [data-intro],
+:root.vai-animar .topo [data-topo-item] {
+  opacity: 0;
+  animation: mostrar 0s 4s forwards;
+}
+@keyframes abrir-luz {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes assentar {
+  to {
+    transform: none;
+  }
+}
+@keyframes mostrar-traco {
+  to {
+    visibility: visible;
+  }
+}
+@keyframes mostrar {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------------------------- abertura */
+.hero {
+  position: relative;
+  height: 100svh;
+  min-height: 34rem;
+  overflow: clip;
+  isolation: isolate;
+  background: #000;
+}
+.hero-camada {
+  position: absolute;
+  inset: 0;
+}
+.hero-foto-intro {
+  transform-origin: 50% 32%;
+}
+.hero-foto picture,
+.hero-foto img {
+  width: 100%;
+  height: 100%;
+}
+.hero-foto img {
+  object-fit: cover;
+  object-position: 50% 16%;
+}
+/* Luz da cena: topo escuro para o cabeçalho, vinheta e o pé da foto dissolvendo no preto */
+.hero-gradiente {
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgb(0 0 0 / 0.5), transparent 16%),
+    linear-gradient(to top, #000 0%, rgb(0 0 0 / 0.86) 18%, rgb(0 0 0 / 0.35) 38%, transparent 56%),
+    radial-gradient(130% 95% at 50% 38%, transparent 52%, rgb(0 0 0 / 0.55) 100%);
+}
+.hero-escuro,
+.hero-veu {
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hero-assinatura {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: clamp(6.5rem, 15svh, 10rem);
+  /* Em notebooks de tela baixa, a assinatura acompanha a altura para não cobrir o rosto */
+  width: min(88vw, 66rem, 118svh);
+  translate: -50% 0;
+  color: #fff;
+  filter: drop-shadow(0 2px 14px rgb(0 0 0 / 0.55));
+}
+
+.assinatura {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+/* Em telas menores a assinatura encolhe; os traços engrossam um pouco para não sumirem */
+.assinatura path {
+  stroke-width: calc(var(--w) * var(--peso, 1.1) + var(--extra, 0.4));
+}
+@media (max-width: 959px) {
+  .assinatura {
+    --peso: 1.35;
+    --extra: 1;
+  }
+}
+@media (max-width: 639px) {
+  .assinatura {
+    --peso: 1.75;
+    --extra: 1.7;
+  }
+}
+
+.hero-texto {
+  z-index: 3;
+  pointer-events: none;
+}
+.hero-texto a {
+  pointer-events: auto;
+}
+.hero-texto-grade {
+  position: relative;
+  height: 100%;
+}
+.hero-chamada {
+  position: absolute;
+  left: var(--margem);
+  top: calc(var(--header) + clamp(1.5rem, 6svh, 4rem));
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.6);
+}
+.hero-base {
+  position: absolute;
+  left: var(--margem);
+  right: var(--margem);
+  bottom: clamp(1.25rem, 3.5svh, 2.25rem);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 1rem;
+}
+.hero-rolar {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+.hero-rolar:hover {
+  color: #fff;
+}
+/* Um risco desce pela linha: indica que a página continua para baixo */
+.hero-rolar-linha {
+  position: relative;
+  width: 1px;
+  height: 46px;
+  overflow: hidden;
+  background: var(--line-2);
+}
+.hero-rolar-linha::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform: translateY(-100%);
+  animation: descer 2.4s var(--ease-suave) infinite;
+}
+@keyframes descer {
+  60%,
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* Celular e tablet em pé: o rosto ocupa a largura toda, então os textos vão para baixo dele,
+ * empilhados de baixo para cima: rodapé, chamada, assinatura */
+@media (max-width: 959px) {
+  .hero-chamada {
+    top: auto;
+    right: var(--margem);
+    bottom: calc(clamp(1.25rem, 3.5svh, 2.25rem) + 2.4rem);
+    max-width: none;
+    font-size: 0.9rem;
+  }
+  .hero-assinatura {
+    bottom: calc(clamp(1.25rem, 3.5svh, 2.25rem) + 10rem);
+  }
+  .hero-base {
+    display: flex;
+    justify-content: space-between;
+  }
+  .hero-base .text-apagado,
+  .hero-rolar {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------------------------- projetos */
+.pausa {
+  height: 0;
+}
+:root.pilha .pausa {
+  height: 35vh;
+}
+
+.vitrine {
+  position: relative;
+  min-height: calc(100svh - var(--header));
+  display: flex;
+  align-items: center;
+  padding: 72px 0;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  overflow: clip;
+}
+/* Desktop com animações: cada projeto sobe como um cartão por cima do anterior */
+:root.pilha .vitrine {
+  border-radius: 32px 32px 0 0;
+  border-top-color: var(--line-2);
+  background: #050506;
+  box-shadow: 0 -30px 90px rgb(0 0 0 / 0.8);
+}
+.vitrine::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -30%;
+  width: 120%;
+  height: 90%;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 12%, transparent), transparent);
+  pointer-events: none;
+}
+/* Número do projeto, gigante e vazado, atrás do texto */
+.vitrine-numero {
+  position: absolute;
+  bottom: -0.16em;
+  left: calc(var(--margem) - 0.06em);
+  font: 600 clamp(10rem, 26vw, 30rem) / 0.8 var(--sans);
+  letter-spacing: -0.07em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.07);
+  pointer-events: none;
+  user-select: none;
+}
+.invertida .vitrine-numero {
+  left: auto;
+  right: calc(var(--margem) - 0.06em);
+}
+
+.grade {
+  position: relative;
+  display: grid;
+  gap: 40px;
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .grade {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 72px;
+  }
+  .invertida .grade {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+  .invertida .info {
+    order: 2;
+  }
+}
+@media (max-width: 959px) {
+  /* No celular a imagem vem antes do texto */
+  .palco3d {
+    order: -1;
+  }
+}
+
+.vitrine-titulo {
+  font-size: clamp(2.6rem, 1.3rem + 4.2vw, 5.4rem);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+.vitrine-descricao {
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+.destaques li {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 10px;
+  color: var(--text-2);
+  font-size: 0.95rem;
+}
+.destaques li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-top: 0.62em;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 8px var(--c);
+}
+
+.midia {
+  display: block;
+  aspect-ratio: 16 / 10;
+  transition: border-color 0.4s var(--ease-expo);
+}
+.midia:hover {
+  border-color: var(--line-2);
+}
+.midia :is(img, .video) {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.midia .video {
+  object-fit: cover;
+  background: var(--surface);
+}
+.cobrir img {
+  object-fit: cover;
+}
+.conter img {
+  object-fit: contain;
+  padding: clamp(18px, 5%, 44px);
+  filter: drop-shadow(0 24px 48px rgb(0 0 0 / 0.45));
+}
+.mostrador :is(svg),
+.mostrador {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+/* Focus: o ponteiro (animado pela rolagem) num cartão menor sobre o vídeo do terminal */
+.mostrador-mini {
+  position: absolute;
+  right: 3%;
+  bottom: 5%;
+  width: 46%;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.55);
+}
+.mostrador-mini svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sem-capa {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 2rem;
+  color: var(--muted);
+}
+.selo {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  background: rgb(0 0 0 / 0.7);
+  backdrop-filter: blur(8px);
+  color: var(--c);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Notebooks com tela baixa: tudo cabe sem rolar dentro da seção */
+@media (min-width: 960px) and (max-height: 860px) {
+  .vitrine {
+    padding: 40px 0;
+  }
+  .info {
+    gap: 14px;
+  }
+  .vitrine-titulo {
+    font-size: clamp(2.4rem, 4.6vw, 3.8rem);
+  }
+  .info .text-lead {
+    font-size: 1.08rem;
+  }
+  .vitrine-descricao,
+  .destaques li {
+    font-size: 0.9rem;
+  }
+  .destaques {
+    gap: 6px;
+  }
+}
+
+/* --------------------------------------------------------------------- trilha lateral */
+.trilha {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  z-index: 40;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease-expo);
+}
+.trilha.visivel {
+  opacity: 1;
+  pointer-events: auto;
+}
+.trilha ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.trilha a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  height: 24px;
+  color: var(--muted);
+  font: 400 0.7rem/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+.trilha-nome {
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.85);
+  color: var(--text);
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity 0.3s var(--ease-expo),
+    transform 0.4s var(--ease-expo);
+  white-space: nowrap;
+}
+.trilha-traco {
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line-2);
+  transition:
+    width 0.5s var(--ease-expo),
+    background-color 0.3s;
+}
+.trilha a:hover .trilha-nome,
+.trilha a:focus-visible .trilha-nome {
+  opacity: 1;
+  transform: none;
+}
+.trilha a[aria-current] {
+  color: var(--text);
+}
+.trilha a[aria-current] .trilha-traco {
+  width: 30px;
+  background: var(--c);
+  box-shadow: 0 0 8px var(--c);
+}
+@media (max-width: 1279px) {
+  .trilha {
+    display: none;
+  }
+}
+
+.arquivo {
+  border-top: 1px solid var(--line);
+}
+.arquivo a:hover .text-apagado {
+  color: var(--text-2);
+}
+
+/* ------------------------------------------------------------------------------- sobre */
+.declaracao .serif {
+  font-size: 1.1em;
+  line-height: 0.9;
+}
+.fato {
+  --regua: 1;
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 18px 0;
+  overflow: hidden;
+}
+/* A régua de cada linha é desenhada pela animação (--regua de 0 a 1) */
+.fato::before,
+.fato:last-child::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: var(--line-2);
+  transform: scaleX(var(--regua));
+  transform-origin: 0 50%;
+}
+.fato:last-child::after {
+  top: auto;
+  bottom: 0;
+}
+
+.icone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 0.8rem;
+  text-align: center;
+  /* A entrada (GSAP) usa transform; o hover usa translate, que soma sem brigar com ela */
+  transition:
+    translate 0.5s var(--ease-expo),
+    border-color 0.4s var(--ease-expo),
+    background-color 0.4s var(--ease-expo),
+    color 0.4s var(--ease-expo);
+}
+.icone img {
+  transition: scale 0.5s var(--ease-expo);
+}
+.icone:hover {
+  translate: 0 -4px;
+  border-color: var(--line-2);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.icone:hover img {
+  scale: 1.08;
+}
+
+/* ----------------------------------------------------------------------------- contato */
+.contato-titulo .serif {
+  font-size: 1.04em;
+}
+.contato-assinatura .assinatura {
+  --peso: 1.7;
+  --extra: 1.4;
+}
+@media (max-width: 959px) {
+  .contato-assinatura {
+    max-width: 30rem;
+  }
+}

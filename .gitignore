@@ -5,3 +5,6 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# Imagem de conferência do vetorizador da assinatura
+tools/assinatura/depuracao.png
