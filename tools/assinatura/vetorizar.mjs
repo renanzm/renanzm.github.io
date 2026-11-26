@@ -83,6 +83,25 @@ const dist = new Float32Array(N);
 /** Largura do traço em volta de um pixel do esqueleto. */
 const larguraEm = (p) => Math.max(1, 2 * dist[p] - 1);
 
+/** Largura pela tinta num disco de raio 3 em volta do ponto: não depende da inclinação do traço
+ * (um traço de 1 px dá ~1, um de 3 px dá ~2,8; o tracejado do traço fino dá menos de 1). */
+const RAIO_DISCO = 3;
+const disco = [];
+for (let dy = -RAIO_DISCO; dy <= RAIO_DISCO; dy++)
+  for (let dx = -RAIO_DISCO; dx <= RAIO_DISCO; dx++) if (dx * dx + dy * dy <= RAIO_DISCO * RAIO_DISCO) disco.push([dx, dy]);
+function larguraLocal(x, y) {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  let soma = 0;
+  for (const [dx, dy] of disco) {
+    const nx = cx + dx;
+    const ny = cy + dy;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+    soma += data[(ny * W + nx) * info.channels + info.channels - 1] / 255;
+  }
+  return soma / (2 * RAIO_DISCO);
+}
+
 /* ------------------------------------------------------- 3. esqueleto (Zhang-Suen) */
 const esq = tinta.slice();
 const em = (x, y) => x >= 0 && y >= 0 && x < W && y < H && esq[y * W + x] === 1;
@@ -312,7 +331,21 @@ const ligar = (e1, l1, e2, l2, tipo) => {
   }
 }
 
-// Pontas soltas: liga falhas do traço fino (a caneta passou rápido e o risco falhou)
+// Pontas soltas: liga as falhas do traço fino. Onde a caneta passou rápido, o risco saiu
+// tracejado; os pedaços são emendados quando um aponta para o outro.
+const MAX_FALHA = 42;
+/** Largura do traço perto de uma ponta (mediana dos últimos pixels). */
+function larguraNaPonta(e, lado) {
+  const pts = (lado === 0 ? e.pts : [...e.pts].reverse()).slice(0, 8);
+  const ws = pts.map(([x, y]) => larguraLocal(x, y)).sort((m, n) => m - n);
+  return ws[ws.length >> 1];
+}
+/** Direção para fora da aresta na ponta `lado` (de dentro do traço para o vão). */
+function direcaoParaFora(e, lado) {
+  const pts = lado === 0 ? e.pts : [...e.pts].reverse();
+  const dentro = direcaoParaDentro(e, lado, Math.min(6, pts.length - 1));
+  return dentro ? [-dentro[0], -dentro[1]] : null;
+}
 {
   const soltas = [];
   for (const e of arestas)
@@ -321,8 +354,7 @@ const ligar = (e1, l1, e2, l2, tipo) => {
       if (e.px.length === 1 && lado === 1) continue;
       const no = lado === 0 ? e.a : e.b;
       const pts = lado === 0 ? e.pts : [...e.pts].reverse();
-      const dentro = direcaoParaDentro(e, lado, Math.min(5, pts.length - 1));
-      soltas.push({ e, lado, p: no >= 0 ? centro(no) : pts[0], fora: dentro ? [-dentro[0], -dentro[1]] : null });
+      soltas.push({ e, lado, p: no >= 0 ? centro(no) : pts[0], fora: direcaoParaFora(e, lado), w: larguraNaPonta(e, lado) });
     }
   const cand = [];
   for (let i = 0; i < soltas.length; i++)
@@ -332,19 +364,21 @@ const ligar = (e1, l1, e2, l2, tipo) => {
       const dx = t.p[0] - s.p[0];
       const dy = t.p[1] - s.p[1];
       const d = Math.hypot(dx, dy);
-      if (d > 14 || d < 1e-6) continue;
-      const fina = Math.min(s.e.largura, t.e.largura) <= 1.8;
-      if (!fina && d > 3) continue;
+      if (d > MAX_FALHA || d < 1e-6) continue;
+      // Vão grande só onde o traço afina; entre dois trechos grossos, só falhas pequenas
+      const fina = Math.min(s.w, t.w) <= 2;
+      if (!fina && d > 6) continue;
       const v = [dx / d, dy / d];
       const c1 = s.fora ? s.fora[0] * v[0] + s.fora[1] * v[1] : 0.8;
       const c2 = t.fora ? -(t.fora[0] * v[0] + t.fora[1] * v[1]) : 0.8;
-      if (c1 < 0.72 || c2 < 0.72) continue;
+      // Quanto maior o vão, mais as duas pontas precisam apontar uma para a outra
+      const exigido = !fina && d > 3 ? 0.85 : d <= 14 ? 0.72 : 0.72 + (d - 14) * 0.006;
+      if (c1 < exigido || c2 < exigido) continue;
       cand.push({ s, t, custo: d * (1 + 4 * (1 - c1) + 4 * (1 - c2)) });
     }
   cand.sort((m, n) => m.custo - n.custo);
   for (const { s, t } of cand) {
     if (s.e.par[s.lado] || t.e.par[t.lado]) continue;
-    // Não fecha um ciclo de arestas que já estão no mesmo traço
     ligar(s.e, s.lado, t.e, t.lado, 'elo');
   }
 }
@@ -352,43 +386,81 @@ const ligar = (e1, l1, e2, l2, tipo) => {
 /* ---------------------------------------------------------- 6. traços contínuos */
 const visitada = new Set();
 const tracos = [];
+/** Ponte sobre uma falha: curva que sai de uma ponta na direção dela e chega na outra do mesmo jeito. */
+function ponte(p1, fora1, p2, fora2) {
+  const d = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+  const k = d / 3;
+  const c1 = fora1 ? [p1[0] + fora1[0] * k, p1[1] + fora1[1] * k] : p1;
+  const c2 = fora2 ? [p2[0] + fora2[0] * k, p2[1] + fora2[1] * k] : p2;
+  const n = Math.max(1, Math.round(d));
+  const r = [];
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    const u = 1 - t;
+    r.push([
+      u * u * u * p1[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * p2[0],
+      u * u * u * p1[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * p2[1],
+    ]);
+  }
+  return r;
+}
+/** Segue um traço de aresta em aresta. Cada ponto leva a largura da tinta em volta dele
+ * (NaN onde não há tinta para medir: centros de junção e pontes, preenchidos depois). */
 function percorrer(inicio, ladoEntrada) {
   const pts = [];
-  const larguras = [];
   let e = inicio;
   let lado = ladoEntrada;
   const noDe = (a, l) => (l === 0 ? a.a : a.b);
-  if (noDe(e, lado) >= 0 && !e.par[lado]) pts.push(centro(noDe(e, lado)));
+  const comLargura = ([x, y]) => [x, y, larguraLocal(x, y)];
+  if (noDe(e, lado) >= 0 && !e.par[lado]) pts.push([...centro(noDe(e, lado)), NaN]);
   while (e && !visitada.has(e)) {
     visitada.add(e);
     const seq = lado === 0 ? e.pts : [...e.pts].reverse();
-    pts.push(...seq);
-    for (let k = 0; k < e.pts.length; k++) larguras.push(e.largura);
+    pts.push(...seq.map(comLargura));
     const sai = 1 - lado;
     const prox = e.par[sai];
-    if (prox?.tipo === 'no') pts.push(centro(noDe(e, sai)));
-    else if (!prox && noDe(e, sai) >= 0) pts.push(centro(noDe(e, sai)));
+    if (prox?.tipo === 'no') pts.push([...centro(noDe(e, sai)), NaN]);
+    else if (!prox && noDe(e, sai) >= 0) pts.push([...centro(noDe(e, sai)), NaN]);
+    if (prox?.tipo === 'elo' && !visitada.has(prox.aresta)) {
+      const outra = prox.aresta;
+      const inicioOutra = (prox.lado === 0 ? outra.pts : [...outra.pts].reverse())[0];
+      for (const [x, y] of ponte(seq[seq.length - 1], direcaoParaFora(e, sai), inicioOutra, direcaoParaFora(outra, prox.lado)))
+        pts.push([x, y, NaN]);
+    }
     e = prox && !visitada.has(prox.aresta) ? prox.aresta : null;
     lado = prox ? prox.lado : 0;
   }
-  return { pts, larguras };
+  // Pontes e junções herdam a largura dos vizinhos (a menor, já que as falhas são do traço fino)
+  for (let i = 0; i < pts.length; i++) {
+    if (!Number.isNaN(pts[i][2])) continue;
+    let a = i - 1;
+    while (a >= 0 && Number.isNaN(pts[a][2])) a--;
+    let b = i + 1;
+    while (b < pts.length && Number.isNaN(pts[b][2])) b++;
+    const wa = a >= 0 ? pts[a][2] : Infinity;
+    const wb = b < pts.length ? pts[b][2] : Infinity;
+    pts[i][2] = Number.isFinite(Math.min(wa, wb)) ? Math.min(wa, wb) : 1;
+  }
+  return { pts };
 }
 // Começa pelas pontas sem continuação; o que sobrar são laços fechados
 for (const e of arestas) for (const lado of [0, 1]) if (!visitada.has(e) && !e.par[lado]) tracos.push(percorrer(e, lado));
 for (const e of arestas) if (!visitada.has(e)) tracos.push(percorrer(e, 0));
 
 /* -------------------------------------------------------- 7. suavizar e simplificar */
+/** Pontos a cada `passo` px; a largura (3º valor) é interpolada junto. */
 function reamostrar(pts, passo = 1) {
   if (pts.length < 2) return pts;
   const r = [pts[0]];
   let sobra = 0;
   for (let i = 1; i < pts.length; i++) {
-    const [ax, ay] = pts[i - 1];
-    const [bx, by] = pts[i];
+    const [ax, ay, aw] = pts[i - 1];
+    const [bx, by, bw] = pts[i];
     const seg = Math.hypot(bx - ax, by - ay);
     let t = passo - sobra;
     while (t <= seg) {
-      r.push([ax + ((bx - ax) * t) / seg, ay + ((by - ay) * t) / seg]);
+      const k = t / seg;
+      r.push([ax + (bx - ax) * k, ay + (by - ay) * k, aw + (bw - aw) * k]);
       t += passo;
     }
     sobra = seg - (t - passo);
@@ -397,6 +469,7 @@ function reamostrar(pts, passo = 1) {
   if (Math.hypot(ult[0] - r[r.length - 1][0], ult[1] - r[r.length - 1][1]) > 0.3) r.push(ult);
   return r;
 }
+/** Suaviza a posição (gaussiana), sem mexer nas pontas. */
 function suavizar(pts, sigma = 1.6) {
   const raio = Math.ceil(sigma * 2.5);
   const pesos = Array.from({ length: 2 * raio + 1 }, (_, k) => Math.exp(-((k - raio) ** 2) / (2 * sigma * sigma)));
@@ -410,8 +483,51 @@ function suavizar(pts, sigma = 1.6) {
       sy += pts[i + k][1] * w;
       sw += w;
     }
-    return [sx / sw, sy / sw];
+    return [sx / sw, sy / sw, p[2]];
   });
+}
+/** Largura ao longo do traço: mediana (tira o calombo dos cruzamentos) e depois média móvel. */
+function suavizarLarguras(ws, raioMediana = 6, raioMedia = 4) {
+  const med = ws.map((_, i) => {
+    const janela = ws.slice(Math.max(0, i - raioMediana), i + raioMediana + 1).sort((m, n) => m - n);
+    return janela[janela.length >> 1];
+  });
+  return med.map((_, i) => {
+    const janela = med.slice(Math.max(0, i - raioMedia), i + raioMedia + 1);
+    return janela.reduce((s, w) => s + w, 0) / janela.length;
+  });
+}
+/** Divide o traço em trechos finos, médios e grossos. Trechos curtos demais viram parte do vizinho. */
+const CLASSE_MINIMA = 12;
+const classeDe = (w) => (w < 1.5 ? 0 : w < 2.15 ? 1 : 2);
+function trechosPorLargura(ws) {
+  let trechos = [];
+  for (let i = 0; i < ws.length; i++) {
+    const c = classeDe(ws[i]);
+    const ult = trechos[trechos.length - 1];
+    if (ult && ult.c === c) ult.fim = i;
+    else trechos.push({ ini: i, fim: i, c });
+  }
+  for (;;) {
+    const curtos = trechos.filter((t) => t.fim - t.ini + 1 < CLASSE_MINIMA);
+    if (!curtos.length || trechos.length === 1) break;
+    const t = curtos.reduce((m, x) => (x.fim - x.ini < m.fim - m.ini ? x : m));
+    const i = trechos.indexOf(t);
+    const [ant, prox] = [trechos[i - 1], trechos[i + 1]];
+    // Junta com o vizinho de largura mais parecida (ou o único que houver)
+    const alvo = !ant ? prox : !prox ? ant : Math.abs(ant.c - t.c) <= Math.abs(prox.c - t.c) ? ant : prox;
+    alvo.ini = Math.min(alvo.ini, t.ini);
+    alvo.fim = Math.max(alvo.fim, t.fim);
+    trechos.splice(i, 1);
+    // Vizinhos da mesma classe que ficaram lado a lado viram um trecho só
+    trechos = trechos.reduce((acc, x) => {
+      const u = acc[acc.length - 1];
+      if (u && u.c === x.c) u.fim = x.fim;
+      else acc.push(x);
+      return acc;
+    }, []);
+  }
+  return trechos;
 }
 function simplificar(pts, eps) {
   if (pts.length < 3) return pts;
@@ -444,50 +560,114 @@ function caminhoSvg(pts) {
 }
 const comprimento = (pts) => pts.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
 
-let saida = tracos
-  .filter((t) => t.pts.length)
-  .map((t) => {
-    let pts = t.pts;
+const arred = (n) => Math.round(n * 10) / 10;
+
+/* Pontas que param a poucos pixels de outro traço, apontando para ele (o "T" com fresta),
+ * são esticadas até encostar. */
+const ALCANCE_ENCOSTO = 14;
+const caminhos = tracos.filter((t) => t.pts.length).map((t) => suavizar(reamostrar(t.pts)));
+{
+  const grade = new Map();
+  const chave = (x, y) => `${Math.floor(x / 4)},${Math.floor(y / 4)}`;
+  caminhos.forEach((pts, dono) =>
+    pts.forEach(([x, y], i) => {
+      const k = chave(x, y);
+      if (!grade.has(k)) grade.set(k, []);
+      grade.get(k).push({ x, y, dono, i });
+    }),
+  );
+  /** Pontos a acrescentar numa ponta para ela encostar no traço mais próximo para onde aponta
+   * (dentro de um cone de ~35°), ou nenhum. */
+  const esticar = (pts, dono, inicio) => {
+    const i0 = inicio ? 0 : pts.length - 1;
+    const ik = inicio ? Math.min(6, pts.length - 1) : Math.max(0, pts.length - 7);
+    const [px, py, pw] = pts[i0];
+    const dx = px - pts[ik][0];
+    const dy = py - pts[ik][1];
+    const n = Math.hypot(dx, dy);
+    if (n < 1e-6) return [];
+    const dir = [dx / n, dy / n];
+    const [gx, gy] = [Math.floor(px / 4), Math.floor(py / 4)];
+    const alcanceGrade = Math.ceil(ALCANCE_ENCOSTO / 4);
+    let melhor = null;
+    for (let a = gx - alcanceGrade; a <= gx + alcanceGrade; a++)
+      for (let b = gy - alcanceGrade; b <= gy + alcanceGrade; b++)
+        for (const q of grade.get(`${a},${b}`) ?? []) {
+          // O próprio fim do traço não conta
+          if (q.dono === dono && Math.abs(q.i - i0) < 30) continue;
+          const vx = q.x - px;
+          const vy = q.y - py;
+          const d = Math.hypot(vx, vy);
+          if (d < 1.5 || d > ALCANCE_ENCOSTO) continue;
+          const cos = (vx * dir[0] + vy * dir[1]) / d;
+          if (cos < 0.82) continue;
+          const custo = d * (1 + 3 * (1 - cos));
+          if (!melhor || custo < melhor.custo) melhor = { x: q.x, y: q.y, d, custo };
+        }
+    if (!melhor) return [];
+    const extra = [];
+    for (let t = 1; t < melhor.d; t += 1) extra.push([px + ((melhor.x - px) * t) / melhor.d, py + ((melhor.y - py) * t) / melhor.d, pw]);
+    extra.push([melhor.x, melhor.y, pw]);
+    return extra;
+  };
+  // Mede as duas pontas de todos os traços antes de mexer em qualquer um
+  const extras = caminhos.map((pts, dono) =>
+    comprimento(pts) < 20 ? [[], []] : [esticar(pts, dono, true), esticar(pts, dono, false)],
+  );
+  caminhos.forEach((pts, dono) => {
+    const [antes, depois] = extras[dono];
+    pts.unshift(...[...antes].reverse());
+    pts.push(...depois);
+  });
+}
+
+/** Cada traço da caneta vira um ou mais trechos de largura própria, emendados ponta com ponta. */
+const gestos = caminhos
+  .map((lisosOriginal) => {
     // A caneta anda da esquerda para a direita
-    if (pts[pts.length - 1][0] < pts[0][0]) pts = [...pts].reverse();
-    const lisos = simplificar(suavizar(reamostrar(pts)), 0.3);
-    const ws = [...t.larguras].sort((m, n) => m - n);
-    const largura = ws[ws.length >> 1] ?? 1;
+    const lisos = lisosOriginal[lisosOriginal.length - 1][0] < lisosOriginal[0][0] ? [...lisosOriginal].reverse() : lisosOriginal;
+    const pts = lisos;
+    const ws = suavizarLarguras(lisos.map((p) => p[2]));
+    const trechos = trechosPorLargura(ws).map(({ ini, fim }) => {
+      // Cada trecho começa no último ponto do anterior, para não abrir fresta entre eles
+      const parte = lisos.slice(Math.max(0, ini - 1), fim + 1);
+      const larg = ws.slice(ini, fim + 1).sort((m, n) => m - n);
+      const simples = simplificar(parte, 0.3);
+      // O traço mais fino ainda precisa aparecer quando a assinatura encolhe na tela
+      const largura = Math.max(0.8, larg[larg.length >> 1] * 0.95);
+      return { d: caminhoSvg(simples), largura: arred(largura), comprimento: Math.round(comprimento(simples)) };
+    });
     const xs = pts.map((p) => p[0]);
-    return {
-      d: caminhoSvg(lisos),
-      largura: Math.round(largura * 0.95 * 10) / 10,
-      comprimento: Math.round(comprimento(lisos)),
-      x0: pts[0][0],
-      y0: pts[0][1],
-      xMin: Math.min(...xs),
-      xMax: Math.max(...xs),
-    };
+    const total = trechos.reduce((s, x) => s + x.comprimento, 0);
+    const largMedia = trechos.reduce((s, x) => s + x.largura * x.comprimento, 0) / Math.max(1, total);
+    return { trechos, total, largMedia, x0: pts[0][0], y0: pts[0][1], xMin: Math.min(...xs), xMax: Math.max(...xs) };
   })
   // Pontinhos de sujeira que sobraram
-  .filter((t) => t.comprimento >= 4 || t.largura >= 2.5);
+  .filter((g) => g.total >= 4 || g.largMedia >= 2.3);
 
 /* -------------------------------------------------------------- 8. ordem da escrita */
 // Da esquerda para a direita; os pingos vêm depois das letras e o traço que corta a assinatura
 // inteira (o sublinhado) fecha a assinatura
-const papel = (t) => (t.xMax - t.xMin > W * 0.5 ? 2 : t.comprimento < 15 && t.largura >= 1.5 && t.xMin > W * 0.5 ? 1 : 0);
-saida.sort((m, n) => papel(m) - papel(n) || m.x0 - n.x0);
+const papel = (g) => (g.xMax - g.xMin > W * 0.5 ? 2 : g.total < 15 && g.largMedia >= 1.5 && g.xMin > W * 0.5 ? 1 : 0);
+gestos.sort((m, n) => papel(m) - papel(n) || m.x0 - n.x0);
 
-console.log(`${saida.length} traços (${W}×${H})`);
-for (const [i, t] of saida.entries())
+const saida = gestos.flatMap((g) => g.trechos.map((t, i) => ({ ...t, continua: i > 0 })));
+console.log(`${gestos.length} traços da caneta, ${saida.length} trechos (${W}×${H})`);
+for (const [i, g] of gestos.entries())
   console.log(
-    `${String(i).padStart(2)}  x ${f(t.xMin).padStart(6)}–${f(t.xMax).padEnd(6)}  início (${f(t.x0)}, ${f(t.y0)})  ` +
-      `comprimento ${String(t.comprimento).padStart(4)}  largura ${t.largura}`,
+    `${String(i).padStart(2)}  x ${f(g.xMin).padStart(6)}–${f(g.xMax).padEnd(6)}  início (${f(g.x0)}, ${f(g.y0)})  ` +
+      `comprimento ${String(g.total).padStart(4)}  larguras ${g.trechos.map((t) => t.largura).join(' ')}`,
   );
 
 const ts = `// Gerado por tools/assinatura/vetorizar.mjs a partir de tools/assinatura/assinatura.png. Não edite à mão.
-// Cada traço é um trecho contínuo da caneta, na ordem em que a assinatura é desenhada.
+// Trechos na ordem em que a assinatura é desenhada. "continua" diz que o trecho segue o anterior
+// sem levantar a caneta (só muda a largura do traço).
 
 export const ASSINATURA = {
   largura: ${W},
   altura: ${H},
   tracos: [
-${saida.map((t) => `    { d: '${t.d}', largura: ${t.largura}, comprimento: ${t.comprimento} },`).join('\n')}
+${saida.map((t) => `    { d: '${t.d}', largura: ${t.largura}, comprimento: ${t.comprimento}, continua: ${t.continua} },`).join('\n')}
   ],
 } as const;
 `;
@@ -495,12 +675,15 @@ await writeFile(SAIDA, ts);
 console.log('→', SAIDA);
 
 if (DEPURAR) {
-  const cor = (i) => `hsl(${Math.round((i * 360) / saida.length)} 85% 45%)`;
+  const cor = (i) => `hsl(${Math.round((i * 360) / gestos.length)} 85% 42%)`;
+  const caminhos = gestos.flatMap((g, i) =>
+    g.trechos.map((t) => `<path d="${t.d}" fill="none" stroke="${cor(i)}" stroke-width="${t.largura}" stroke-linecap="round" stroke-linejoin="round"/>`),
+  );
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W * 2}" height="${H * 2}" viewBox="0 0 ${W} ${H}">
   <rect width="100%" height="100%" fill="#fff"/>
   <image href="data:image/png;base64,${(await sharp(ENTRADA).png().toBuffer()).toString('base64')}" width="${W}" height="${H}" opacity="0.18"/>
-  ${saida.map((t, i) => `<path d="${t.d}" fill="none" stroke="${cor(i)}" stroke-width="${t.largura}" stroke-linecap="round" stroke-linejoin="round"/>`).join('\n  ')}
-  ${saida.map((t, i) => `<text x="${f(t.x0)}" y="${f(t.y0 - 3)}" font-size="9" font-family="Arial" fill="${cor(i)}">${i}</text>`).join('\n  ')}
+  ${caminhos.join('\n  ')}
+  ${gestos.map((g, i) => `<text x="${f(g.x0)}" y="${f(g.y0 - 3)}" font-size="9" font-family="Arial" fill="${cor(i)}">${i}</text>`).join('\n  ')}
 </svg>`;
   await sharp(Buffer.from(svg)).png().toFile(DEPURACAO);
   console.log('→', DEPURACAO);

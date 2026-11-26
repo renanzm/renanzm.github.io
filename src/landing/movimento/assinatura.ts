@@ -3,7 +3,7 @@ import { gsap } from './gsap';
 import { CURVA } from './ritmo';
 
 /** Velocidade da caneta, em unidades da assinatura (ela tem 1646 de largura) por segundo. */
-const VELOCIDADE = 2300;
+const VELOCIDADE = 3300;
 
 const tracosDe = (svg: Element | null) => (svg ? gsap.utils.toArray<SVGPathElement>(svg.querySelectorAll('path')) : []);
 
@@ -12,27 +12,42 @@ export function apagar(svg: Element | null) {
   gsap.set(tracosDe(svg), { visibility: 'hidden' });
 }
 
+/** Junta os trechos que seguem um ao outro sem a caneta levantar (data-continua). */
+function gestosDe(tracos: SVGPathElement[]) {
+  const gestos: SVGPathElement[][] = [];
+  for (const traco of tracos) {
+    const anterior = gestos[gestos.length - 1];
+    if (traco.dataset.continua !== undefined && anterior) anterior.push(traco);
+    else gestos.push([traco]);
+  }
+  return gestos;
+}
+
 /** Linha do tempo que escreve a assinatura. Serve tanto tocada sozinha quanto presa à rolagem. */
 export function escrever(svg: Element | null, velocidade = VELOCIDADE): gsap.core.Timeline {
-  const tracos = tracosDe(svg);
+  const gestos = gestosDe(tracosDe(svg));
   const tl = gsap.timeline();
   let t = 0;
-  tracos.forEach((traco, i) => {
-    const largura = parseFloat(traco.style.getPropertyValue('--w')) || 2;
-    const comprimento = Number(traco.dataset.comprimento) || traco.getTotalLength();
-    const fino = largura < 1.8;
-    const ultimo = i === tracos.length - 1;
-    // Traço fino é a caneta passando rápido; o sublinhado do fim sai num gesto só
-    const v = velocidade * (fino ? 2 : ultimo ? 1.5 : 1);
-    const duracao = gsap.utils.clamp(0.05, 0.9, comprimento / v);
-    tl.set(traco, { visibility: 'visible' }, t).fromTo(
-      traco,
-      { drawSVG: '0% 0%' },
-      { drawSVG: '0% 100%', duration: duracao, ease: fino ? 'power1.out' : CURVA.caneta },
-      t,
-    );
-    // A caneta levanta entre um traço e outro
-    t += duracao + (fino ? 0.01 : 0.04);
+  gestos.forEach((trechos, i) => {
+    // O sublinhado do fim sai num gesto só, mais rápido
+    const ritmo = i === gestos.length - 1 ? 1.5 : 1;
+    // Dentro de um gesto a caneta não para: os trechos se emendam em velocidade constante...
+    const gesto = gsap.timeline({ paused: true });
+    let fim = 0;
+    for (const trecho of trechos) {
+      const largura = parseFloat(trecho.style.getPropertyValue('--w')) || 2;
+      const comprimento = Number(trecho.dataset.comprimento) || trecho.getTotalLength();
+      // ...mais depressa onde o traço afina, que é onde a mão passou rápido
+      const duracao = Math.max(0.02, comprimento / (velocidade * ritmo * (largura < 1.5 ? 1.7 : 1)));
+      gesto
+        .set(trecho, { visibility: 'visible' }, fim)
+        .fromTo(trecho, { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: duracao, ease: 'none' }, fim);
+      fim += duracao;
+    }
+    // ...e o gesto inteiro acelera no começo e freia no fim, como a mão
+    tl.add(gesto.tweenFromTo(0, gesto.duration(), { ease: CURVA.caneta }), t);
+    // A caneta levanta entre um gesto e outro
+    t += gesto.duration() + 0.04;
   });
   return tl;
 }

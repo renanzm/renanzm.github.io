@@ -16,7 +16,13 @@ export function Assinatura({ className = '' }: { className?: string }) {
     >
       <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
         {tracos.map((t, i) => (
-          <path key={i} d={t.d} style={{ '--w': t.largura } as CSSProperties} data-comprimento={t.comprimento} />
+          <path
+            key={i}
+            d={t.d}
+            style={{ '--w': t.largura } as CSSProperties}
+            data-comprimento={t.comprimento}
+            data-continua={t.continua ? '' : undefined}
+          />
         ))}
       </g>
     </svg>
