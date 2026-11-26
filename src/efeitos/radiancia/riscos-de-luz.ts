@@ -12,8 +12,8 @@
  *     cada quadro com riscos, os emissores são redesenhados num canvas 2D do tamanho da cena (o
  *     alfa é a forma do risco e o vermelho é o quanto ele ainda brilha, ver emissor-imagem.wgsl)
  *     e enviados para a GPU;
- *   - o risco em si é desenhado nítido num segundo canvas 2D, na resolução da tela; a luz roda em
- *     40% da resolução de CSS (ela é suave);
+ *   - o risco em si é desenhado nítido num segundo canvas 2D, na resolução da tela; a luz roda na
+ *     resolução de CSS, até 1920×1080 (ver escalaDaCena em simulation.ts);
  *   - só a luz em volta dos riscos, atenuada pela distância (luz.wgsl), sem a grade do exemplo;
  *   - o arraste começa só no fundo da abertura, fora dos textos e links (ver pintura.ts);
  *   - sem riscos na tela, o loop para, e volta no próximo risco;
@@ -25,19 +25,18 @@ import {
   createScene,
   destroyScene,
   enviarImagem,
+  escalaDaCena,
   prepareScene,
   presentScene,
   runChain,
   type RadianceScene,
 } from './simulation';
 
-/** Resolução da cena (luz) em relação aos px de CSS. */
-const ESCALA = 0.4;
 /** Branco quente, um pouco menos amarelo que o do triângulo do exemplo (3.8, 3.2, 2.4). */
 const RADIANCIA = [3.6, 3.3, 2.9] as const;
 const EXPOSICAO = 0.8;
-/** Distância (px da cena, ~2,5 px de CSS cada) em que a luz cai pela metade longe do risco. */
-const ALCANCE = 18;
+/** Distância (px de CSS) em que a luz cai pela metade longe do risco. */
+const ALCANCE = 45;
 /** Segundos que o risco fica aceso, e quantos leva apagando depois. */
 const ACESO = 1.2;
 const APAGANDO = 2.4;
@@ -86,6 +85,9 @@ export function criarRiscosDeLuz({ canvas, tinta, area }: Opcoes) {
   let rebuilding = false;
   let cssSize: readonly [number, number] = [1, 1];
 
+  /** Px da cena por px de CSS, agora. */
+  const escala = () => (scene ? scene.size[0] / Math.max(1, cssSize[0]) : 1);
+
   const riscos: Risco[] = [];
   /** Há luz na tela: quando o último risco apaga, falta um quadro para limpar. */
   let aceso = false;
@@ -106,7 +108,7 @@ export function criarRiscosDeLuz({ canvas, tinta, area }: Opcoes) {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
     }
-    emissores.lineWidth = Math.max(1.5, EMISSOR * ESCALA);
+    emissores.lineWidth = Math.max(1.5, EMISSOR * escala());
     nitido.lineWidth = TRACO * dpr;
     // Do mais antigo ao mais novo: onde um risco cruza o outro, vale o mais aceso
     for (const { de, para, feito } of riscos) {
@@ -177,7 +179,7 @@ export function criarRiscosDeLuz({ canvas, tinta, area }: Opcoes) {
         desenhar(agora);
         enviarImagem(scene, raster);
         runChain(scene, { radiancia: RADIANCIA });
-        presentScene(scene, canvasSurface, { intensidade: 1, exposicao: EXPOSICAO, alcance: ALCANCE });
+        presentScene(scene, canvasSurface, { intensidade: 1, exposicao: EXPOSICAO, alcance: ALCANCE * escala() });
         aceso = riscos.length > 0;
       } catch (error) {
         fail(error);
@@ -231,7 +233,8 @@ export function criarRiscosDeLuz({ canvas, tinta, area }: Opcoes) {
     try {
       cssSize = [size.width, size.height];
       ajustarTinta(size.width, size.height);
-      canvasSurface.resize([Math.max(1, Math.round(size.width * ESCALA)), Math.max(1, Math.round(size.height * ESCALA))]);
+      const e = escalaDaCena(size.width, size.height);
+      canvasSurface.resize([Math.max(1, Math.round(size.width * e)), Math.max(1, Math.round(size.height * e))]);
     } catch (error) {
       fail(error);
     }
@@ -252,7 +255,8 @@ export function criarRiscosDeLuz({ canvas, tinta, area }: Opcoes) {
     cssSize = [Math.max(1, width), Math.max(1, height)];
     ajustarTinta(cssSize[0], cssSize[1]);
     canvasSurface = surface(gpu, canvas, { autoResize: false, dpr: 1 });
-    canvasSurface.resize([Math.max(1, Math.round(cssSize[0] * ESCALA)), Math.max(1, Math.round(cssSize[1] * ESCALA))]);
+    const e = escalaDaCena(cssSize[0], cssSize[1]);
+    canvasSurface.resize([Math.max(1, Math.round(cssSize[0] * e)), Math.max(1, Math.round(cssSize[1] * e))]);
     scene = createScene(gpu, canvasSurface.size, 'imagem', 'luz');
     raster.width = scene.size[0];
     raster.height = scene.size[1];

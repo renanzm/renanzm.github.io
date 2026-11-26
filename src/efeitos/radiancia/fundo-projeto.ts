@@ -10,8 +10,8 @@
  * Diferente, porque aqui é o fundo de uma página de texto:
  *   - o triângulo de luz fica no canto de cima, à direita, na cor do projeto, e cresce ao abrir
  *     a página (sem crescer, para quem prefere menos movimento);
- *   - a cena (a luz) roda em metade da resolução de CSS; a grade continua nítida (ver
- *     present.wgsl), e os traços e o triângulo são redesenhados nítidos num canvas 2D por cima, na
+ *   - a cena (a luz) roda na resolução de CSS, até 1920×1080 (ver escalaDaCena em
+ *     simulation.ts); a grade é desenhada na resolução da tela (ver present.wgsl), e os traços e o triângulo são redesenhados nítidos num canvas 2D por cima, na
  *     resolução da tela, com a mesma forma e a mesma cor que a luz mostra embaixo;
  *   - traços mais finos que os do exemplo (6 px de raio em CSS);
  *   - o quadro só é redesenhado quando algo muda (o exemplo redesenha todo quadro);
@@ -23,6 +23,7 @@ import { instalarPintura, type PaintSegment } from './pintura';
 import {
   createScene,
   destroyScene,
+  escalaDaCena,
   prepareScene,
   presentScene,
   runChain,
@@ -30,8 +31,6 @@ import {
   type RadianceScene,
 } from './simulation';
 
-/** Resolução da cena (luz) em relação aos px de CSS. */
-const ESCALA = 0.5;
 /** Força da luz sobre a grade: o texto fica por cima. */
 const INTENSIDADE = 0.85;
 /** Segundos em que o triângulo de luz cresce ao abrir a página. */
@@ -90,6 +89,11 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
   let precisaApresentar = true;
   let inicio = 0;
   let cssSize: readonly [number, number] = [1, 1];
+  /** Tamanho da cena (luz) para a área atual: a resolução de CSS, até o teto de escalaDaCena. */
+  const tamanhoDaCena = (): [number, number] => {
+    const e = escalaDaCena(cssSize[0], cssSize[1]);
+    return [cssSize[0] * e, cssSize[1] * e];
+  };
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const radiancia = radianciaDaCor(cor);
 
@@ -184,7 +188,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     const previous = scene;
     if (disposed || !canvasSurface || !previous) return;
     try {
-      const next = createScene(previous.gpu, [cssSize[0] * ESCALA, cssSize[1] * ESCALA], 'pintura', 'fundo');
+      const next = createScene(previous.gpu, tamanhoDaCena(), 'pintura', 'fundo');
       scene = next;
       destroyScene(previous);
       clearRequested = true;
@@ -201,7 +205,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
 
   const onSurfaceResize = () => {
     if (!scene) return;
-    const [w, h] = [Math.floor(cssSize[0] * ESCALA), Math.floor(cssSize[1] * ESCALA)];
+    const [w, h] = tamanhoDaCena().map(Math.floor);
     if (scene.size[0] !== w || scene.size[1] !== h) rebuildScene();
     precisaApresentar = true;
   };
@@ -246,7 +250,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
         const luz = triangulo(agora);
         if (segment || luz.crescendo) dirty = true;
         if (dirty) {
-          runChain(scene, { segment, keepPrevious: !clearRequested, triangulo: luz, raioTraco: RAIO_TRACO * ESCALA });
+          runChain(scene, { segment, keepPrevious: !clearRequested, triangulo: luz, raioTraco: RAIO_TRACO * (scene.size[0] / Math.max(1, cssSize[0])) });
           // Os traços nítidos: só o trecho novo, ou tudo quando o triângulo muda ou a cena é nova
           if (segment) trechos.push(segment);
           if (clearRequested || luz.raio !== raioDoTriangulo) redesenharTinta = true;
@@ -286,7 +290,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     tinta.height = pixels[1];
     canvasSurface = surface(gpu, canvas, { autoResize: false, dpr: [1, 2] });
     canvasSurface.resize(pixels);
-    scene = createScene(gpu, [cssSize[0] * ESCALA, cssSize[1] * ESCALA], 'pintura', 'fundo');
+    scene = createScene(gpu, tamanhoDaCena(), 'pintura', 'fundo');
     await prepareScene(scene, canvasSurface.format);
     if (disposed) return;
 

@@ -47,6 +47,15 @@ const HDR_FORMAT: GPUTextureFormat = 'rgba16float';
 const SEED_FORMAT: GPUTextureFormat = 'rgba32float';
 const RC_INTERVAL0 = 2;
 
+/** Teto de pixels da cena: até 1920×1080 a luz é calculada na resolução de CSS da tela; acima
+ * disso, a escala cai o bastante para não passar daqui (a memória de vídeo cresce com a área). */
+const PIXELS_MAXIMOS = 1920 * 1080;
+
+/** Escala da cena (luz) em relação aos px de CSS de uma área de largura × altura. */
+export function escalaDaCena(largura: number, altura: number): number {
+  return Math.min(1, Math.sqrt(PIXELS_MAXIMOS / Math.max(1, largura * altura)));
+}
+
 /** Cor de cada traço pintado: a mesma sequência de matizes do exemplo. */
 export function strokeRadiance(index: number): Vec3 {
   const hue = (index * 0.381966) % 1;
