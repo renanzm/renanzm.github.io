@@ -59,12 +59,16 @@
 .hero-foto-intro {
   transform-origin: 50% 32%;
 }
-.hero-foto picture,
+/* Câmera um pouco recuada: a foto ocupa 90% da altura da tela, então o rosto fica menor.
+   A largura continua de ponta a ponta (no celular o recorte passa pelos ombros, que não são
+   pretos); a sobra fica em cima e embaixo, onde a foto já é preta como o fundo */
+.hero-foto picture {
+  position: absolute;
+  inset: 4% 0 6%;
+}
 .hero-foto img {
   width: 100%;
   height: 100%;
-}
-.hero-foto img {
   object-fit: cover;
   object-position: 50% 16%;
 }

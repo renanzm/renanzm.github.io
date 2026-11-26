@@ -12,11 +12,12 @@ const vitrine = projetos.filter((p) => p.data.status !== 'arquivado');
 const arquivados = projetos.filter((p) => p.data.status === 'arquivado');
 const [github, linkedin] = site.redes;
 
-// Retrato da abertura em AVIF e WebP, em várias larguras
-const larguras = [640, 960, 1280, 1600, 1920];
+// Retrato da abertura em AVIF e WebP, em várias larguras (a maior é a do arquivo original).
+// Qualidade um pouco mais alta para não perder o detalhe do upscale.
+const larguras = [640, 960, 1280, 1600, retrato.width];
 const [fotoAvif, fotoWebp] = await Promise.all([
-  getImage({ src: retrato, widths: larguras, format: 'avif', quality: 62 }),
-  getImage({ src: retrato, widths: larguras, format: 'webp', quality: 78 }),
+  getImage({ src: retrato, widths: larguras, format: 'avif', quality: 70 }),
+  getImage({ src: retrato, widths: larguras, format: 'webp', quality: 82 }),
 ]);
 
 const cartoes: ProjetoCartao[] = await Promise.all(

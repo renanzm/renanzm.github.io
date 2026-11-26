@@ -1,8 +1,9 @@
 import { Assinatura } from './Assinatura';
 import type { Foto } from './tipos';
 
-// Com object-fit: cover, numa tela mais "alta" que a foto (16:9), ela é desenhada pela altura
-const TAMANHOS = '(max-aspect-ratio: 16/9) 177vh, 100vw';
+// Com object-fit: cover, a foto (proporção 1,77) ocupa 90% da altura da tela; em telas mais
+// "altas" que 1,59 ela é desenhada pela altura, mais larga que a tela
+const TAMANHOS = '(max-aspect-ratio: 159/100) 159vh, 100vw';
 
 interface Props {
   nome: string;
