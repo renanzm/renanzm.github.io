@@ -26,13 +26,13 @@ links:
 downloads:
   - rotulo: Programa + manual offline (.zip)
     plataforma: windows
-    url: https://github.com/renanzm/sound-mod-rs/releases/download/v1.0.0/SoundMod-v1.0.0-windows-x64.zip
-    versao: 1.0.0
-    tamanho: 5,4 MB
+    url: https://github.com/renanzm/sound-mod-rs/releases/download/v1.1.0/SoundMod-v1.1.0-windows-x64.zip
+    versao: 1.1.0
+    tamanho: 5,5 MB
   - rotulo: Só o executável (.exe)
     plataforma: windows
-    url: https://github.com/renanzm/sound-mod-rs/releases/download/v1.0.0/SoundMod.exe
-    versao: 1.0.0
+    url: https://github.com/renanzm/sound-mod-rs/releases/download/v1.1.0/SoundMod.exe
+    versao: 1.1.0
     tamanho: 9,8 MB
 ---
 
