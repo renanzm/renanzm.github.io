@@ -52,6 +52,13 @@ const imagemAbs = imagem ? new URL(imagem, Astro.site).href : undefined;
           <li data-topo-item>
             <a href={site.redes[0].url} class="link-nav" target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true"> ↗</span></a>
           </li>
+          <li data-topo-item>
+            <!-- Música de fundo (scripts/musica.ts): liga e desliga -->
+            <button type="button" class="link-nav som" data-som aria-pressed="true" aria-label="Música de fundo">
+              <span class="som-barras" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <span class="so-largo">Som</span>
+            </button>
+          </li>
         </ul>
       </nav>
     </header>
@@ -84,7 +91,9 @@ const imagemAbs = imagem ? new URL(imagem, Astro.site).href : undefined;
     </footer>
     <script>
       import { iniciarLuzDoSite } from '../scripts/luz-site';
+      import { iniciarMusica } from '../scripts/musica';
       iniciarLuzDoSite();
+      iniciarMusica();
     </script>
   </body>
 </html>
@@ -181,6 +190,60 @@ const imagemAbs = imagem ? new URL(imagem, Astro.site).href : undefined;
   .link-nav:hover::after {
     transform: scaleX(1);
     transform-origin: 0% 50%;
+  }
+  /* Botão de som: o mesmo texto dos links, com quatro barras que dançam enquanto a música toca */
+  .som {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+  .som-barras {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 10px;
+  }
+  .som-barras i {
+    width: 2px;
+    height: 3px;
+    border-radius: 1px;
+    background: currentColor;
+    opacity: 0.7;
+  }
+  .som[aria-pressed='false'] .som-barras i {
+    opacity: 0.35;
+  }
+  .som.tocando .som-barras i {
+    animation: barra 1.1s ease-in-out infinite alternate;
+  }
+  .som.tocando .som-barras i:nth-child(2) {
+    animation-delay: -0.4s;
+  }
+  .som.tocando .som-barras i:nth-child(3) {
+    animation-delay: -0.75s;
+  }
+  .som.tocando .som-barras i:nth-child(4) {
+    animation-delay: -0.2s;
+  }
+  @keyframes barra {
+    from {
+      height: 3px;
+    }
+    to {
+      height: 10px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .som.tocando .som-barras i {
+      animation: none;
+      height: 7px;
+    }
   }
   @media (max-width: 520px) {
     .nav ul {
