@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Assinatura } from './Assinatura';
+import { instalarRaioX } from './raio-x';
 import type { Foto } from './tipos';
 
 // Com object-fit: cover, a foto (proporção 1,77) ocupa 94% da altura da tela; em telas mais
@@ -50,12 +51,19 @@ function useRiscosDeLuz(
 }
 
 /** Abertura: o retrato e a assinatura, em camadas que se movem em velocidades diferentes na
- * rolagem. Atrás do busto recortado, o fundo onde o visitante risca luz. */
+ * rolagem. Atrás do busto recortado, o fundo onde o visitante risca luz; em cima dele, a lente de
+ * raio-x que mostra a malha do busto onde o cursor passa. */
 export function Hero({ nome, cargo, empresa, cidade, chamada, foto }: Props) {
   const hero = useRef<HTMLElement>(null);
   const luz = useRef<HTMLCanvasElement>(null);
   const riscos = useRef<HTMLCanvasElement>(null);
+  const raioX = useRef<HTMLDivElement>(null);
   useRiscosDeLuz(hero, luz, riscos);
+  // Raio-x do busto: a lente que mostra a malha no lugar do rosto (ver raio-x.ts)
+  useEffect(() => {
+    if (!hero.current || !raioX.current) return;
+    return instalarRaioX(hero.current, raioX.current);
+  }, []);
 
   return (
     <section ref={hero} className="hero" id="inicio" aria-labelledby="hero-nome">
@@ -78,6 +86,9 @@ export function Hero({ nome, cargo, empresa, cidade, chamada, foto }: Props) {
                 decoding="async"
               />
             </picture>
+            <div ref={raioX} className="hero-busto-raio-x" aria-hidden="true">
+              <img alt="" decoding="async" data-src="/hero/busto-malha.webp" />
+            </div>
             <div className="hero-busto-brilho" aria-hidden="true">
               <span className="hero-busto-faixa" />
             </div>

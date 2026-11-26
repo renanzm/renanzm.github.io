@@ -27,7 +27,14 @@ A página inicial é uma ilha React (`src/landing/`) dentro do Astro, estilizada
   node tools/retrato/mascara.mjs --depurar
   ```
 
-  O script grava em `public/hero/` a máscara do busto (`busto-mascara.webp`) e o halo escuro em volta dele (`busto-sombra.webp`). Com `--depurar`, grava também `tools/retrato/depuracao.png`, com o busto recortado sobre um fundo colorido. Ao trocar o retrato, troque também o `busto.webp`.
+  O script grava em `public/hero/` a máscara do busto (`busto-mascara.webp`) e o halo escuro em volta dele (`busto-sombra.webp`). Com `--depurar`, grava também `tools/retrato/depuracao.png`, com o busto recortado sobre um fundo colorido. Ao trocar o retrato, troque também o `busto.webp` e gere a malha de novo (abaixo).
+- Passando o mouse pelo busto, uma lente de raio-x mostra no lugar do rosto uma malha de triângulos, como um escudo de força, no formato exato do recorte (`src/landing/raio-x.ts`). A malha é gerada a partir da foto e da máscara; depois de trocar o retrato ou o recorte, gere de novo:
+
+  ```powershell
+  node tools/retrato/malha.mjs --depurar
+  ```
+
+  O script grava `public/hero/busto-malha.webp` e, com `--depurar`, `tools/retrato/depuracao-malha.png`, com a malha sobre preto. A densidade dos pontos fica em `RAIO_MIN` e `RAIO_MAX`, a cor em `COR`; o tamanho da lente é `RAIO` em `raio-x.ts`.
 - Ao abrir a página, um brilho atravessa o busto: a faixa `.hero-busto-faixa` de `landing.css`, levada pela linha do tempo de `movimento/abertura.ts`.
 
 ### Efeitos em WebGPU
