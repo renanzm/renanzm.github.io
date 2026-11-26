@@ -5,10 +5,14 @@ import { CURVA } from './ritmo';
 /** Velocidade da caneta, em unidades da assinatura (ela tem 1646 de largura) por segundo. */
 const VELOCIDADE = 3300;
 
-const tracosDe = (svg: Element | null) => (svg ? gsap.utils.toArray<SVGPathElement>(svg.querySelectorAll('path')) : []);
+const tracosDe = (svg: Element | null) =>
+  svg ? gsap.utils.toArray<SVGPathElement>(svg.querySelectorAll('.caneta path')) : [];
 
-/** Some com os traços (antes de escrever). */
+/** Liga a máscara da caneta sobre a tinta e apaga os traços: a assinatura some até ser escrita. */
 export function apagar(svg: Element | null) {
+  const tinta = svg?.querySelector('.tinta');
+  const mascara = svg?.getAttribute('data-mascara');
+  if (tinta && mascara) gsap.set(tinta, { attr: { mask: `url(#${mascara})` }, visibility: 'visible' });
   gsap.set(tracosDe(svg), { visibility: 'hidden' });
 }
 
@@ -49,5 +53,8 @@ export function escrever(svg: Element | null, velocidade = VELOCIDADE): gsap.cor
     // A caneta levanta entre um gesto e outro
     t += gesto.duration() + 0.04;
   });
+  // Escrita completa: a máscara sai, e a tinta aparece inteira mesmo onde o pincel não passou
+  const tinta = svg?.querySelector('.tinta');
+  if (tinta) tl.set(tinta, { attr: { mask: 'none' } });
   return tl;
 }

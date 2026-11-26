@@ -13,7 +13,7 @@
   transform: scale(1.14);
   animation: assentar 0s 4s forwards;
 }
-:root.vai-animar .hero .assinatura path {
+:root.vai-animar .hero .assinatura .tinta {
   visibility: hidden;
   animation: mostrar-traco 0s 4s forwards;
 }
@@ -105,21 +105,9 @@
   height: auto;
   overflow: visible;
 }
-/* Em telas menores a assinatura encolhe; os traços engrossam um pouco para não sumirem */
-.assinatura path {
-  stroke-width: calc(var(--w) * var(--peso, 1.1) + var(--extra, 0.4));
-}
-@media (max-width: 959px) {
-  .assinatura {
-    --peso: 1.35;
-    --extra: 1;
-  }
-}
-@media (max-width: 639px) {
-  .assinatura {
-    --peso: 1.75;
-    --extra: 1.7;
-  }
+/* O pincel da máscara é mais largo que a tinta, para cobrir as curvas e as pontas do traço */
+.assinatura .caneta path {
+  stroke-width: calc(var(--w) * 2.4);
 }
 
 .hero-texto {
@@ -562,10 +550,6 @@
 /* ----------------------------------------------------------------------------- contato */
 .contato-titulo .serif {
   font-size: 1.04em;
-}
-.contato-assinatura .assinatura {
-  --peso: 1.7;
-  --extra: 1.4;
 }
 @media (max-width: 959px) {
   .contato-assinatura {

@@ -83,12 +83,17 @@ const dist = new Float32Array(N);
 /** Largura do traço em volta de um pixel do esqueleto. */
 const larguraEm = (p) => Math.max(1, 2 * dist[p] - 1);
 
-/** Largura pela tinta num disco de raio 3 em volta do ponto: não depende da inclinação do traço
- * (um traço de 1 px dá ~1, um de 3 px dá ~2,8; o tracejado do traço fino dá menos de 1). */
-const RAIO_DISCO = 3;
-const disco = [];
-for (let dy = -RAIO_DISCO; dy <= RAIO_DISCO; dy++)
-  for (let dx = -RAIO_DISCO; dx <= RAIO_DISCO; dx++) if (dx * dx + dy * dy <= RAIO_DISCO * RAIO_DISCO) disco.push([dx, dy]);
+/** Largura pela tinta num disco em volta do ponto: não depende da inclinação do traço
+ * (com raio 3, um traço de 1 px dá ~1, um de 3 px dá ~2,8; o tracejado do traço fino dá menos de 1).
+ * O raio cresce com a espessura da assinatura (ver ESPESSURA, depois do esqueleto). */
+let RAIO_DISCO = 3;
+let disco = [];
+function montarDisco(raio) {
+  RAIO_DISCO = raio;
+  disco = [];
+  for (let dy = -raio; dy <= raio; dy++)
+    for (let dx = -raio; dx <= raio; dx++) if (dx * dx + dy * dy <= raio * raio) disco.push([dx, dy]);
+}
 function larguraLocal(x, y) {
   const cx = Math.floor(x);
   const cy = Math.floor(y);
@@ -146,6 +151,12 @@ const em = (x, y) => x >= 0 && y >= 0 && x < W && y < H && esq[y * W + x] === 1;
     }
   }
 }
+
+/* Espessura típica do traço (tinta ÷ comprimento do esqueleto). Os limites em pixels abaixo
+ * acompanham ela: uma assinatura de traço grosso tem cruzamentos e pontas maiores. */
+const ESPESSURA = tinta.reduce((s, v) => s + v, 0) / Math.max(1, esq.reduce((s, v) => s + v, 0));
+montarDisco(Math.max(3, Math.ceil(ESPESSURA * 0.75)));
+console.log(`espessura típica ${ESPESSURA.toFixed(1)} px`);
 
 /* --------------------------------------------- 4. grafo: junções e trechos entre elas */
 // Sem os degraus, todo pixel com 3 ou mais vizinhos é onde traços se encontram
@@ -238,7 +249,7 @@ for (const comp of grupos.lista) {
 
 // Trechos curtíssimos entre duas junções: as junções viram um nó só (cruzamento em X)
 arestas = arestas.filter((e) => {
-  if (e.a >= 0 && e.b >= 0 && e.px.length <= 3) {
+  if (e.a >= 0 && e.b >= 0 && e.px.length <= Math.max(3, Math.round(ESPESSURA / 2))) {
     if (raiz(e.a) !== raiz(e.b)) unir(e.a, e.b);
     return false;
   }
@@ -273,7 +284,7 @@ for (let volta = 0; volta < 2; volta++) {
   arestas = arestas.filter((e) => {
     const solta = (e.a < 0) !== (e.b < 0);
     const no = e.a >= 0 ? e.a : e.b;
-    return !(solta && e.px.length <= 4 && grau.get(no) >= 3);
+    return !(solta && e.px.length <= Math.max(4, Math.round(ESPESSURA)) && grau.get(no) >= 3);
   });
 }
 
@@ -639,7 +650,12 @@ const gestos = caminhos
     });
     const xs = pts.map((p) => p[0]);
     const total = trechos.reduce((s, x) => s + x.comprimento, 0);
-    const largMedia = trechos.reduce((s, x) => s + x.largura * x.comprimento, 0) / Math.max(1, total);
+    // Pingo: um ponto só, que a ponta redonda desenha como bolinha do tamanho do traço
+    if (!total) for (const t of trechos) t.largura = arred(Math.max(t.largura, ESPESSURA * 1.1));
+    // Um pingo tem comprimento zero: a largura dele é a do próprio trecho
+    const largMedia = total
+      ? trechos.reduce((s, x) => s + x.largura * x.comprimento, 0) / total
+      : Math.max(...trechos.map((x) => x.largura));
     return { trechos, total, largMedia, x0: pts[0][0], y0: pts[0][1], xMin: Math.min(...xs), xMax: Math.max(...xs) };
   })
   // Pontinhos de sujeira que sobraram
@@ -659,13 +675,97 @@ for (const [i, g] of gestos.entries())
       `comprimento ${String(g.total).padStart(4)}  larguras ${g.trechos.map((t) => t.largura).join(' ')}`,
   );
 
+/* ----------------------------------------------------- 9. contorno da tinta
+ * O que aparece na tela é o contorno exato da tinta do PNG (preenchido). Os traços acima não são
+ * desenhados: viram a máscara que revela esse contorno na ordem da caneta. Assim o resultado é
+ * igual ao original mesmo onde o esqueleto erra (traços grossos que se cruzam quase paralelos). */
+function contornoDaTinta() {
+  const ISO = 0.5;
+  const v = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 0 : data[(y * W + x) * info.channels + info.channels - 1] / 255);
+  const posicao = new Map();
+  const vizinhos = new Map();
+  // Ponto onde a borda de uma célula cruza o nível 0,5 (h = borda horizontal, v = vertical)
+  const ponto = (tipo, x, y) => {
+    const k = `${tipo}${x},${y}`;
+    if (!posicao.has(k)) {
+      const a = v(x, y);
+      const b = tipo === 'h' ? v(x + 1, y) : v(x, y + 1);
+      const t = Math.abs(b - a) < 1e-9 ? 0.5 : (ISO - a) / (b - a);
+      posicao.set(k, tipo === 'h' ? [x + t + 0.5, y + 0.5] : [x + 0.5, y + t + 0.5]);
+    }
+    return k;
+  };
+  const ligar = (a, b) => {
+    for (const [p, q] of [[a, b], [b, a]]) {
+      if (!vizinhos.has(p)) vizinhos.set(p, []);
+      vizinhos.get(p).push(q);
+    }
+  };
+  for (let y = -1; y < H; y++)
+    for (let x = -1; x < W; x++) {
+      const tl = v(x, y), tr = v(x + 1, y), br = v(x + 1, y + 1), bl = v(x, y + 1);
+      const c = (tl > ISO ? 8 : 0) | (tr > ISO ? 4 : 0) | (br > ISO ? 2 : 0) | (bl > ISO ? 1 : 0);
+      if (c === 0 || c === 15) continue;
+      const T = () => ponto('h', x, y), B = () => ponto('h', x, y + 1);
+      const L = () => ponto('v', x, y), R = () => ponto('v', x + 1, y);
+      const centro = (tl + tr + br + bl) / 4 > ISO;
+      switch (c) {
+        case 1: case 14: ligar(L(), B()); break;
+        case 2: case 13: ligar(B(), R()); break;
+        case 3: case 12: ligar(L(), R()); break;
+        case 4: case 11: ligar(T(), R()); break;
+        case 6: case 9: ligar(T(), B()); break;
+        case 7: case 8: ligar(L(), T()); break;
+        case 5: if (centro) { ligar(L(), T()); ligar(B(), R()); } else { ligar(T(), R()); ligar(L(), B()); } break;
+        case 10: if (centro) { ligar(T(), R()); ligar(L(), B()); } else { ligar(L(), T()); ligar(B(), R()); } break;
+      }
+    }
+  // Segue cada laço fechado
+  const visto = new Set();
+  const lacos = [];
+  for (const inicio of vizinhos.keys()) {
+    if (visto.has(inicio)) continue;
+    const laco = [];
+    let atual = inicio, antes = null;
+    while (atual && !visto.has(atual)) {
+      visto.add(atual);
+      laco.push(posicao.get(atual));
+      const prox = vizinhos.get(atual).find((k) => k !== antes && !visto.has(k));
+      antes = atual;
+      atual = prox;
+    }
+    if (laco.length >= 8) lacos.push(laco);
+  }
+  // Suaviza de leve (laço fechado), simplifica e escreve
+  return lacos
+    .map((laco) => {
+      const n = laco.length;
+      const liso = laco.map((_, i) => {
+        let sx = 0, sy = 0, sw = 0;
+        for (let k = -2; k <= 2; k++) {
+          const w = Math.exp(-(k * k) / 2);
+          const [px, py] = laco[(i + k + n) % n];
+          sx += px * w; sy += py * w; sw += w;
+        }
+        return [sx / sw, sy / sw];
+      });
+      const simples = simplificar([...liso, liso[0]], 0.3).slice(0, -1);
+      return `M${simples.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`;
+    })
+    .join('');
+}
+const contorno = contornoDaTinta();
+console.log(`contorno: ${contorno.length} caracteres`);
+
 const ts = `// Gerado por tools/assinatura/vetorizar.mjs a partir de tools/assinatura/assinatura.png. Não edite à mão.
-// Trechos na ordem em que a assinatura é desenhada. "continua" diz que o trecho segue o anterior
+// "contorno" é a tinta (preenchida). "tracos" são o caminho da caneta, na ordem em que a assinatura
+// é escrita; servem de máscara que revela o contorno. "continua" diz que o trecho segue o anterior
 // sem levantar a caneta (só muda a largura do traço).
 
 export const ASSINATURA = {
   largura: ${W},
   altura: ${H},
+  contorno: '${contorno}',
   tracos: [
 ${saida.map((t) => `    { d: '${t.d}', largura: ${t.largura}, comprimento: ${t.comprimento}, continua: ${t.continua} },`).join('\n')}
   ],
