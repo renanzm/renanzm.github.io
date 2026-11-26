@@ -1,5 +1,4 @@
-/* Música de fundo: a Lacrimosa do Réquiem de Mozart (Josef Krips, Filarmônica de Viena, 1950;
- * ver o README sobre a gravação), em loop, baixinho.
+/* Música de fundo: public/audio/musica-de-fundo.aac (ver o README), em loop, baixinho.
  *
  * A música tenta tocar assim que a página abre. O navegador só deixa quando a pessoa já
  * interagiu com o site (ou com ele em visitas anteriores); se ele bloquear, a música entra no
@@ -7,7 +6,7 @@
  * escolha fica salva (desligou, continua desligada nas próximas visitas). Ao trocar de página, a
  * música volta do ponto em que estava. */
 
-const ARQUIVO = '/audio/lacrimosa.aac';
+const ARQUIVO = '/audio/musica-de-fundo.aac';
 /** Volume da música: fundo, não primeiro plano. */
 const VOLUME = 0.35;
 const ENTRADA = 2;

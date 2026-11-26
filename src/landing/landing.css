@@ -59,16 +59,13 @@
 .hero-foto-intro {
   transform-origin: 50% 32%;
 }
-/* Câmera um pouco recuada: a foto ocupa 90% da altura da tela, então o rosto fica menor.
-   A largura continua de ponta a ponta (no celular o recorte passa pelos ombros, que não são
-   pretos); a sobra fica em cima e embaixo, onde a foto já é preta como o fundo */
+/* Câmera um pouco recuada: a foto ocupa 94% da altura da tela, então o rosto fica menor. Ela
+   começa abaixo do cabeçalho e vai até o pé da abertura: os ombros cobrem o fundo até embaixo e
+   a luz dos riscos não escapa por baixo do busto. Alinhada pelo topo (o 0% abaixo), a foto nunca
+   corta o cabelo, que quase encosta na borda de cima; o que sobra é cortado nos ombros */
 .hero-busto {
   position: absolute;
-  inset: 4% 0 6%;
-  /* Os ombros vão até o pé da foto: ali o busto se dissolve, em vez de terminar numa linha reta
-     sobre a luz do fundo */
-  -webkit-mask: linear-gradient(to top, transparent, #000 9%);
-  mask: linear-gradient(to top, transparent, #000 9%);
+  inset: 6% 0 0;
 }
 .hero-busto picture,
 .hero-busto img {
@@ -78,15 +75,15 @@
 }
 .hero-busto img {
   object-fit: cover;
-  object-position: 50% 16%;
+  object-position: 50% 0%;
 }
 /* O busto recortado (máscara gerada por tools/retrato/mascara.mjs): atrás dele, os riscos de luz.
-   A máscara usa o mesmo encaixe da foto (cover, 50% 16%) para coincidir com ela */
+   A máscara usa o mesmo encaixe da foto (cover, 50% 0%) para coincidir com ela */
 .hero-busto img,
 .hero-busto-brilho,
 .hero-busto .hero-gradiente {
-  -webkit-mask: url('/hero/busto-mascara.webp') 50% 16% / cover no-repeat;
-  mask: url('/hero/busto-mascara.webp') 50% 16% / cover no-repeat;
+  -webkit-mask: url('/hero/busto-mascara.webp') 50% 0% / cover no-repeat;
+  mask: url('/hero/busto-mascara.webp') 50% 0% / cover no-repeat;
 }
 /* Halo escuro em volta do busto: separa a silhueta da luz do fundo. O cabelo quase encosta no
    topo da foto, e o halo acabaria ali numa linha reta: ele some antes, num degradê */
@@ -96,11 +93,11 @@
   background: #000;
   opacity: 0.9;
   -webkit-mask:
-    url('/hero/busto-sombra.webp') 50% 16% / cover no-repeat,
+    url('/hero/busto-sombra.webp') 50% 0% / cover no-repeat,
     linear-gradient(transparent, #000 10%);
   -webkit-mask-composite: source-in;
   mask:
-    url('/hero/busto-sombra.webp') 50% 16% / cover no-repeat,
+    url('/hero/busto-sombra.webp') 50% 0% / cover no-repeat,
     linear-gradient(transparent, #000 10%);
   mask-composite: intersect;
 }
