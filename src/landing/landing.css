@@ -101,30 +101,6 @@
     linear-gradient(transparent, #000 10%);
   mask-composite: intersect;
 }
-/* Raio-x (ver raio-x.ts): dentro de uma lente que segue o cursor, o rosto some num fundo escuro e
-   aparece a malha de triângulos do busto. A lente é a máscara: o busto e um círculo em --rx/--ry
-   com raio --rr, de borda suave. A malha (a img) usa o mesmo encaixe da foto */
-.hero-busto-raio-x {
-  --rx: -999px;
-  --ry: -999px;
-  --rr: 0px;
-  position: absolute;
-  inset: 0;
-  visibility: hidden;
-  pointer-events: none;
-  background: rgb(1 8 7 / 0.93);
-  -webkit-mask:
-    url('/hero/busto-mascara.webp') 50% 0% / cover no-repeat,
-    radial-gradient(circle var(--rr) at var(--rx) var(--ry), #000 calc(100% - 28px), transparent);
-  -webkit-mask-composite: source-in;
-  mask:
-    url('/hero/busto-mascara.webp') 50% 0% / cover no-repeat,
-    radial-gradient(circle var(--rr) at var(--rx) var(--ry), #000 calc(100% - 28px), transparent);
-  mask-composite: intersect;
-}
-.hero-busto-raio-x.ativo {
-  visibility: visible;
-}
 /* Brilho que atravessa o busto na abertura (a faixa é levada pela GSAP, ver abertura.ts).
    Em overlay, clareia a pele e o cabelo e deixa o preto da camiseta preto */
 .hero-busto-brilho {
