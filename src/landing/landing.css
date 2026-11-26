@@ -266,12 +266,16 @@
   align-items: center;
 }
 @media (min-width: 960px) {
-  .grade {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: 72px;
+  /* A prévia do app tem 20% a mais que os 7/12 da grade padrão; a caixa do cartão alarga um
+     pouco para o texto não ficar espremido, e o texto nunca fica com menos de 340 px */
+  .vitrine .grade {
+    --midia: min(calc((min(var(--max), 100vw - 2 * var(--margem)) - 72px) * 0.7), calc(100% - 396px));
+    max-width: calc(1400px + 2 * var(--margem));
+    grid-template-columns: minmax(0, 1fr) var(--midia);
+    gap: 56px;
   }
   .invertida .grade {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-columns: var(--midia) minmax(0, 1fr);
   }
   .invertida .info {
     order: 2;
@@ -382,8 +386,9 @@
   text-transform: uppercase;
 }
 
-/* Notebooks com tela baixa: tudo cabe sem rolar dentro da seção */
-@media (min-width: 960px) and (max-height: 860px) {
+/* Telas de até ~1000 px de altura: texto mais compacto ao lado da prévia maior, para o cartão
+   caber inteiro sem rolar dentro da seção */
+@media (min-width: 960px) and (max-height: 999px) {
   .vitrine {
     padding: 40px 0;
   }
@@ -402,6 +407,12 @@
   }
   .destaques {
     gap: 6px;
+  }
+}
+/* Notebooks com tela baixa: ali a prévia cresce só 10%, senão o texto fica mais alto que a tela */
+@media (min-width: 960px) and (max-height: 860px) {
+  .vitrine .grade {
+    --midia: min(calc((min(var(--max), 100vw - 2 * var(--margem)) - 72px) * 0.64), calc(100% - 396px));
   }
 }
 

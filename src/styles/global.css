@@ -340,7 +340,8 @@
     inset: 0;
     border-radius: inherit;
     pointer-events: none;
-    opacity: var(--luz, 0);
+    /* Holofote do mouse a 70% da força */
+    opacity: calc(var(--luz, 0) * 0.7);
     z-index: 3;
   }
   /* Brilho na cor do projeto, onde o mouse está */
@@ -360,7 +361,7 @@
     -webkit-mask-image: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), #000, transparent 72%);
     mask-image: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), #000, transparent 72%);
     mix-blend-mode: screen;
-    opacity: calc(var(--luz, 0) * 0.45);
+    opacity: calc(var(--luz, 0) * 0.315);
   }
   /* A borda acende no trecho mais perto do mouse */
   .luz-borda {
