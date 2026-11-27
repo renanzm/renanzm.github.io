@@ -101,22 +101,6 @@
     linear-gradient(transparent, #000 10%);
   mask-composite: intersect;
 }
-/* Flare na silhueta (efeitos/flare): por cima do busto, do tamanho da caixa da foto. O canvas é
-   transparente onde não há luz; em screen, a luz soma à foto sem escurecer nada */
-.hero-busto-flare {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0;
-  transition: opacity 1.6s var(--ease-suave);
-}
-.hero-busto-flare.pronto {
-  opacity: 1;
-}
 /* Brilho que atravessa o busto na abertura (a faixa é levada pela GSAP, ver abertura.ts).
    Em overlay, clareia a pele e o cabelo e deixa o preto da camiseta preto */
 .hero-busto-brilho {

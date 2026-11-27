@@ -1,7 +1,7 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "holographic-card", "radiance-cascades", "nextjs-flare"],
+  "exclude": ["dist", "holographic-card", "radiance-cascades"],
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react"
