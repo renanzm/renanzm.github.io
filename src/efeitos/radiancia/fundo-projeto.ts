@@ -14,7 +14,8 @@
  *     simulation.ts); a grade é desenhada na resolução da tela (ver present.wgsl), e os traços são
  *     redesenhados nítidos num canvas 2D por cima, na resolução da tela, com a mesma forma e a
  *     mesma cor que a luz mostra embaixo;
- *   - traços mais finos que os do exemplo (4 px de raio em CSS);
+ *   - traços mais finos que os do exemplo (4 px de raio em CSS), todos na cor do projeto (no
+ *     exemplo, cada traço ganha uma cor diferente);
  *   - o quadro só é redesenhado quando algo muda (o exemplo redesenha todo quadro);
  *   - a pintura só começa fora do texto e só com mouse ou caneta (ver pintura.ts);
  *   - divide o contexto de GPU (efeitos/contexto.ts), sem o lil-gui de depuração do exemplo. */
@@ -28,7 +29,6 @@ import {
   prepareScene,
   presentScene,
   runChain,
-  strokeRadiance,
   type RadianceScene,
 } from './simulation';
 
@@ -45,9 +45,25 @@ interface Opcoes {
   readonly canvas: HTMLCanvasElement;
   /** Canvas 2D por cima da luz, para os traços nítidos. */
   readonly tinta: HTMLCanvasElement;
+  /** Cor do projeto (#rrggbb): a cor dos traços. */
+  readonly cor: string;
 }
 
 type Vec3 = readonly [number, number, number];
+
+/** #rrggbb → radiância linear dos traços: o tom da cor, forte o bastante para iluminar, mas sem
+ * passar do ponto em que o tonemap a deixaria quase branca (o amarelo continua amarelo). */
+function radianciaDaCor(hex: string): Vec3 {
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex.trim());
+  if (!m) return [2, 2, 2];
+  const linear = (c: string) => {
+    const v = parseInt(c, 16) / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  const rgb = [linear(m[1]!), linear(m[2]!), linear(m[3]!)];
+  const maior = Math.max(...rgb, 1e-3);
+  return rgb.map((c) => (c / maior) * 2) as unknown as Vec3;
+}
 
 /** A cor com que present.wgsl mostra um emissor: ACES e sRGB, como no shader. */
 function corNaTela(radiancia: Vec3) {
@@ -57,7 +73,7 @@ function corNaTela(radiancia: Vec3) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-export function criarFundoDeLuz({ canvas, tinta }: Opcoes) {
+export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
   let disposed = false;
   const reserva = reservarGpu();
   let canvasSurface: Surface | undefined;
@@ -79,18 +95,21 @@ export function criarFundoDeLuz({ canvas, tinta }: Opcoes) {
     return [cssSize[0] * e, cssSize[1] * e];
   };
 
+  const radiancia = radianciaDaCor(cor);
+  const corDoTraco = corNaTela(radiancia);
+
   // Os traços nítidos: o que foi pintado desde a última vez que a cena foi refeita
   const nitido = tinta.getContext('2d');
   const trechos: PaintSegment[] = [];
   let redesenharTinta = true;
 
   /** Um trecho de traço no canvas nítido: a cápsula que paint-emitter.wgsl desenha na luz. */
-  const desenharTrecho = ({ from, to, stroke }: PaintSegment) => {
+  const desenharTrecho = ({ from, to }: PaintSegment) => {
     if (!nitido) return;
     const [w, h] = [tinta.width, tinta.height];
     nitido.lineCap = 'round';
     nitido.lineWidth = 2 * RAIO_TRACO * (w / Math.max(1, cssSize[0]));
-    nitido.strokeStyle = corNaTela(strokeRadiance(stroke));
+    nitido.strokeStyle = corDoTraco;
     nitido.beginPath();
     nitido.moveTo(from[0] * w, from[1] * h);
     nitido.lineTo(to[0] * w, to[1] * h);
@@ -205,7 +224,7 @@ export function criarFundoDeLuz({ canvas, tinta }: Opcoes) {
         if (segment) dirty = true;
         if (dirty) {
           const raioTraco = RAIO_TRACO * (scene.size[0] / Math.max(1, cssSize[0]));
-          runChain(scene, { segment, keepPrevious: !clearRequested, triangulo: SEM_TRIANGULO, raioTraco });
+          runChain(scene, { segment, keepPrevious: !clearRequested, triangulo: SEM_TRIANGULO, corTraco: radiancia, raioTraco });
           // Os traços nítidos: só o trecho novo, ou tudo quando a cena é nova
           if (segment) trechos.push(segment);
           if (clearRequested) redesenharTinta = true;

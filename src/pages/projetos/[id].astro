@@ -33,7 +33,7 @@ const externo = (url: string) => /^https?:\/\//.test(url);
 <Base titulo={d.titulo} descricao={d.resumo} imagem={imagemSocial}>
   <!-- Fundo de luz em WebGPU (efeitos/radiancia/fundo-projeto.ts) e, por cima, os traços nítidos
        em canvas 2D; sem WebGPU, os dois ficam invisíveis -->
-  <canvas class="fundo-luz" aria-hidden="true"></canvas>
+  <canvas class="fundo-luz" data-cor={d.cor} aria-hidden="true"></canvas>
   <canvas class="fundo-tinta" aria-hidden="true"></canvas>
   <article style={`--c: ${d.cor}`}>
     <header class="container cab escurecido">
@@ -225,7 +225,7 @@ const externo = (url: string) => /^https?:\/\//.test(url);
   if (fundo && tinta && 'gpu' in navigator) {
     import('../../efeitos/radiancia/fundo-projeto')
       .then(({ criarFundoDeLuz }) => {
-        const luz = criarFundoDeLuz({ canvas: fundo, tinta });
+        const luz = criarFundoDeLuz({ canvas: fundo, tinta, cor: fundo.dataset.cor ?? '#7dd3a8' });
         // Saindo da página de verdade (não para o cache de voltar), libera a GPU
         addEventListener('pagehide', (e) => !e.persisted && luz.dispose());
         return luz.ready.then(() => {

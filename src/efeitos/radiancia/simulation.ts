@@ -204,6 +204,9 @@ export interface ChainOptions {
   readonly keepPrevious?: boolean;
   /** Modo pintura: centro (px da cena), raio (px da cena) e radiância do triângulo de luz. */
   readonly triangulo?: { readonly centro: Vec2; readonly raio: number; readonly radiancia: Vec3 };
+  /** Modo pintura: cor (radiância) de todos os traços; sem ela, cada traço tem a sua, como no
+   * exemplo. */
+  readonly corTraco?: Vec3;
   /** Modo pintura: raio do traço, em px da cena (o do exemplo é 5). */
   readonly raioTraco?: number;
   /** Modo imagem: radiância dos emissores da imagem. */
@@ -220,7 +223,7 @@ function buildChain(scene: RadianceScene, options: ChainOptions) {
     effects.emissor.set({ emissor: { radiance: [r, g, b, 1] }, imagem: scene.imagem! });
   } else {
     const segment = options.segment;
-    const color = strokeRadiance(segment?.stroke ?? 0);
+    const color = options.corTraco ?? strokeRadiance(segment?.stroke ?? 0);
     const triangulo = options.triangulo;
     // O triângulo quente do exemplo, no centro, é o padrão
     const [tr, tg, tb] = triangulo?.radiancia ?? [3.8, 3.2, 2.4];
