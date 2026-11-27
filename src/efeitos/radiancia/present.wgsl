@@ -49,11 +49,13 @@ fn distance_ramp(distance: f32, period: f32) -> vec3f {
 // Adaptado do exemplo "Radiance Cascades" do vgpu, para o fundo das páginas de projeto:
 //   - a grade é desenhada em px de CSS (view.z = px de saída por px de CSS), então fica nítida
 //     mesmo com a cena (luz) calculada em resolução menor que a tela;
-//   - view.w controla a força da luz (o fundo fica atrás do texto da página).
+//   - view.w controla a força da luz (o fundo fica atrás do texto da página), e view.y só a da
+//     grade iluminada, para o fundo ficar mais escuro sem apagar os traços.
 // O resto é o present do exemplo.
 
 struct Present {
-  /** x: 0 final, 1 emitters, 2 SDF, 3 cascade atlas. z: output px per CSS px. w: intensity. */
+  /** x: 0 final, 1 emitters, 2 SDF, 3 cascade atlas. y: grid brightness. z: output px per CSS px.
+   * w: intensity. */
   view: vec4f,
 };
 
@@ -114,7 +116,7 @@ fn fs_main(@location(0) uv: vec2f, @builtin(position) position: vec4f) -> @locat
   let emitter = textureLoad(emitter_tex, texel, 0);
   // Emitters are opaque: they show their own radiance instead of the light landing on them.
   let lit = mix(
-    albedo * (irradiance + 0.01),
+    albedo * (irradiance + 0.01) * present.view.y,
     emitter.rgb,
     clamp(emitter.a, 0.0, 1.0),
   );

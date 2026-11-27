@@ -8,9 +8,9 @@ import { sdf_segment, sdf_triangle } from "./sdf-sample.wgsl";
 // while max keeps every emitter at exactly the radiance it was painted with.
 
 // Adaptado do exemplo "Radiance Cascades" do vgpu: o triângulo de luz ganhou centro e cor
-// escolhidos pela página (flags.zw e triangle.rgb), e o raio do traço também (triangle.a; o do
-// exemplo é 5 px). Os padrões, postos em simulation.ts, são os do exemplo: centro da cena e
-// branco quente (3.8, 3.2, 2.4).
+// escolhidos pela página (flags.zw e triangle.rgb), pode ser desligado (raio zero, em flags.y), e
+// o raio do traço também é da página (triangle.a; o do exemplo é 5 px). Os padrões, postos em
+// simulation.ts, são os do exemplo: centro da cena e branco quente (3.8, 3.2, 2.4).
 
 struct Paint {
   stroke_from: vec2f,
@@ -39,16 +39,19 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
 
   let centre = paint.flags.zw;
   let r = paint.flags.y;
-  // Equilateral, apex up: uv.y grows downwards, so the apex is at -y.
-  let apex = centre + vec2f(0.0, -r);
-  let left = centre + vec2f(-r * 0.8660254, r * 0.5);
-  let right = centre + vec2f(r * 0.8660254, r * 0.5);
-  let triangle = 1.0 - smoothstep(
-    -1.0,
-    1.0,
-    sdf_triangle(pixel, apex, right, left),
-  );
-  accumulated = max(accumulated, vec4f(paint.triangle.rgb * triangle, triangle));
+  // Raio zero: sem triângulo (o fundo das páginas de projeto começa vazio)
+  if (r > 0.0) {
+    // Equilateral, apex up: uv.y grows downwards, so the apex is at -y.
+    let apex = centre + vec2f(0.0, -r);
+    let left = centre + vec2f(-r * 0.8660254, r * 0.5);
+    let right = centre + vec2f(r * 0.8660254, r * 0.5);
+    let triangle = 1.0 - smoothstep(
+      -1.0,
+      1.0,
+      sdf_triangle(pixel, apex, right, left),
+    );
+    accumulated = max(accumulated, vec4f(paint.triangle.rgb * triangle, triangle));
+  }
 
   if (paint.color.a > 0.5) {
     let stroke = 1.0 - smoothstep(

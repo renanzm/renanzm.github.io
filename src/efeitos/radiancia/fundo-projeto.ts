@@ -1,6 +1,6 @@
 /* Fundo de luz das páginas de projeto, adaptado de renderer.ts do exemplo "Radiance Cascades" do
- * vgpu: uma grade escura iluminada pela luz global (jump flood + cascatas), com o triângulo de luz
- * do exemplo e a pintura de luz arrastando o mouse.
+ * vgpu: uma grade escura, vazia, que só se ilumina com a pintura de luz arrastando o mouse (luz
+ * global: jump flood + cascatas).
  *
  * Igual ao exemplo: superfície sem auto-resize com dpr de 1 a 2, medida por ResizeObserver e
  * ajustada no quadro seguinte (e de novo se o devicePixelRatio mudar); a cena refeita quando o
@@ -8,12 +8,13 @@
  * mudam; nada roda com a aba oculta; dispose() desfaz tudo, com a falha original preservada.
  *
  * Diferente, porque aqui é o fundo de uma página de texto:
- *   - o triângulo de luz fica no canto de cima, à direita, na cor do projeto, e cresce ao abrir
- *     a página (sem crescer, para quem prefere menos movimento);
+ *   - sem o triângulo de luz do exemplo: o fundo começa vazio e escuro, livre para pintar;
+ *   - a grade iluminada fica mais escura que a do exemplo (FUNDO), e os traços não;
  *   - a cena (a luz) roda na resolução de CSS, até 1920×1080 (ver escalaDaCena em
- *     simulation.ts); a grade é desenhada na resolução da tela (ver present.wgsl), e os traços e o triângulo são redesenhados nítidos num canvas 2D por cima, na
- *     resolução da tela, com a mesma forma e a mesma cor que a luz mostra embaixo;
- *   - traços mais finos que os do exemplo (6 px de raio em CSS);
+ *     simulation.ts); a grade é desenhada na resolução da tela (ver present.wgsl), e os traços são
+ *     redesenhados nítidos num canvas 2D por cima, na resolução da tela, com a mesma forma e a
+ *     mesma cor que a luz mostra embaixo;
+ *   - traços mais finos que os do exemplo (4 px de raio em CSS);
  *   - o quadro só é redesenhado quando algo muda (o exemplo redesenha todo quadro);
  *   - a pintura só começa fora do texto e só com mouse ou caneta (ver pintura.ts);
  *   - divide o contexto de GPU (efeitos/contexto.ts), sem o lil-gui de depuração do exemplo. */
@@ -31,38 +32,22 @@ import {
   type RadianceScene,
 } from './simulation';
 
-/** Força da luz sobre a grade: o texto fica por cima. */
+/** Força da luz (dos traços e da grade): o texto fica por cima. */
 const INTENSIDADE = 0.85;
-/** Segundos em que o triângulo de luz cresce ao abrir a página. */
-const ABERTURA = 1.8;
+/** Brilho da grade iluminada em volta dos traços (1 é o do exemplo): menos, fundo mais escuro. */
+const FUNDO = 0.45;
 /** Raio do traço pintado, em px de CSS. */
-const RAIO_TRACO = 6;
-/** Onde fica o triângulo, em frações da tela, e o raio final em fração do lado menor. */
-const TRIANGULO = { x: 0.82, y: 0.2, raio: 0.075 } as const;
+const RAIO_TRACO = 4;
+/** Sem o triângulo de luz do exemplo (raio zero). */
+const SEM_TRIANGULO = { centro: [0, 0] as const, raio: 0, radiancia: [0, 0, 0] as const };
 
 interface Opcoes {
   readonly canvas: HTMLCanvasElement;
-  /** Canvas 2D por cima da luz, para os traços e o triângulo nítidos. */
+  /** Canvas 2D por cima da luz, para os traços nítidos. */
   readonly tinta: HTMLCanvasElement;
-  /** Cor do projeto (#rrggbb): a cor da luz. */
-  readonly cor: string;
 }
 
 type Vec3 = readonly [number, number, number];
-
-/** #rrggbb → radiância linear (HDR, como o branco quente do exemplo, perto de 3,5). */
-function radianciaDaCor(hex: string): [number, number, number] {
-  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex.trim());
-  if (!m) return [3.8, 3.2, 2.4];
-  const linear = (c: string) => {
-    const v = parseInt(c, 16) / 255;
-    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  };
-  const rgb = [linear(m[1]!), linear(m[2]!), linear(m[3]!)];
-  const maior = Math.max(...rgb, 1e-3);
-  // Mantém o tom da cor e a força de uma luz forte, com um pouco de branco para não saturar
-  return rgb.map((c) => (0.25 + 0.75 * (c / maior)) * 3.6) as [number, number, number];
-}
 
 /** A cor com que present.wgsl mostra um emissor: ACES e sRGB, como no shader. */
 function corNaTela(radiancia: Vec3) {
@@ -72,7 +57,7 @@ function corNaTela(radiancia: Vec3) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
+export function criarFundoDeLuz({ canvas, tinta }: Opcoes) {
   let disposed = false;
   const reserva = reservarGpu();
   let canvasSurface: Surface | undefined;
@@ -87,34 +72,17 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
   let dirty = true;
   let clearRequested = false;
   let precisaApresentar = true;
-  let inicio = 0;
   let cssSize: readonly [number, number] = [1, 1];
   /** Tamanho da cena (luz) para a área atual: a resolução de CSS, até o teto de escalaDaCena. */
   const tamanhoDaCena = (): [number, number] => {
     const e = escalaDaCena(cssSize[0], cssSize[1]);
     return [cssSize[0] * e, cssSize[1] * e];
   };
-  const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const radiancia = radianciaDaCor(cor);
 
   // Os traços nítidos: o que foi pintado desde a última vez que a cena foi refeita
   const nitido = tinta.getContext('2d');
   const trechos: PaintSegment[] = [];
-  let raioDoTriangulo = 0;
   let redesenharTinta = true;
-
-  /** Triângulo de luz no canto de cima, à direita, crescendo durante a abertura. */
-  const triangulo = (agora: number) => {
-    const [w, h] = scene!.size;
-    const progresso = calmo ? 1 : Math.min(1, (agora - inicio) / 1000 / ABERTURA);
-    const suave = 1 - (1 - progresso) ** 3;
-    return {
-      centro: [w * TRIANGULO.x, h * TRIANGULO.y] as const,
-      raio: Math.max(0.5, Math.min(w, h) * TRIANGULO.raio * suave),
-      radiancia,
-      crescendo: progresso < 1,
-    };
-  };
 
   /** Um trecho de traço no canvas nítido: a cápsula que paint-emitter.wgsl desenha na luz. */
   const desenharTrecho = ({ from, to, stroke }: PaintSegment) => {
@@ -129,23 +97,10 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     nitido.stroke();
   };
 
-  /** Tudo de novo no canvas nítido: o triângulo e, por cima, os traços. */
+  /** Todos os traços de novo no canvas nítido (depois de ele mudar de tamanho ou a cena ser nova). */
   const redesenhar = () => {
-    if (!nitido || !scene) return;
-    const [w, h] = [tinta.width, tinta.height];
-    nitido.clearRect(0, 0, w, h);
-    // O raio do triângulo está em px da cena; o canvas nítido, em px da tela
-    const r = raioDoTriangulo * (w / scene.size[0]);
-    const [cx, cy] = [w * TRIANGULO.x, h * TRIANGULO.y];
-    if (r > 0.5) {
-      nitido.fillStyle = corNaTela(radiancia);
-      nitido.beginPath();
-      nitido.moveTo(cx, cy - r);
-      nitido.lineTo(cx + r * 0.8660254, cy + r * 0.5);
-      nitido.lineTo(cx - r * 0.8660254, cy + r * 0.5);
-      nitido.closePath();
-      nitido.fill();
-    }
+    if (!nitido) return;
+    nitido.clearRect(0, 0, tinta.width, tinta.height);
     for (const trecho of trechos) desenharTrecho(trecho);
   };
 
@@ -241,21 +196,20 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     measure();
   }
 
-  const tick = (agora: number) => {
+  const tick = () => {
     animationFrame = 0;
     if (disposed) return;
     if (!document.hidden && canvasSurface && scene && input) {
       try {
         const segment = input.take();
-        const luz = triangulo(agora);
-        if (segment || luz.crescendo) dirty = true;
+        if (segment) dirty = true;
         if (dirty) {
-          runChain(scene, { segment, keepPrevious: !clearRequested, triangulo: luz, raioTraco: RAIO_TRACO * (scene.size[0] / Math.max(1, cssSize[0])) });
-          // Os traços nítidos: só o trecho novo, ou tudo quando o triângulo muda ou a cena é nova
+          const raioTraco = RAIO_TRACO * (scene.size[0] / Math.max(1, cssSize[0]));
+          runChain(scene, { segment, keepPrevious: !clearRequested, triangulo: SEM_TRIANGULO, raioTraco });
+          // Os traços nítidos: só o trecho novo, ou tudo quando a cena é nova
           if (segment) trechos.push(segment);
-          if (clearRequested || luz.raio !== raioDoTriangulo) redesenharTinta = true;
+          if (clearRequested) redesenharTinta = true;
           else if (segment && !redesenharTinta) desenharTrecho(segment);
-          raioDoTriangulo = luz.raio;
           clearRequested = false;
           dirty = false;
           precisaApresentar = true;
@@ -267,6 +221,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
         if (precisaApresentar) {
           presentScene(scene, canvasSurface, {
             intensidade: INTENSIDADE,
+            fundo: FUNDO,
             dpr: canvasSurface.size[0] / Math.max(1, cssSize[0]),
           });
           precisaApresentar = false;
@@ -299,7 +254,6 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measure);
     observer?.observe(canvas);
     window.addEventListener('resize', onWindowResize);
-    inicio = performance.now();
     animationFrame = requestAnimationFrame(tick);
   };
 

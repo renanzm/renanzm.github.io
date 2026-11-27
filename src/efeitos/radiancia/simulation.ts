@@ -290,6 +290,8 @@ export function runChain(scene: RadianceScene, options: ChainOptions = {}): void
 export interface PresentOptions {
   /** Força da luz: 0 apaga, 1 é a do exemplo. */
   readonly intensidade: number;
+  /** Modo fundo: brilho da grade iluminada (1 é o do exemplo); os traços não mudam. */
+  readonly fundo?: number;
   /** Modo fundo: px de saída por px de CSS (o dpr da superfície), para a grade ficar nítida. */
   readonly dpr?: number;
   /** Modo luz: exposição extra da luz (a "parede" é a página). */
@@ -308,7 +310,7 @@ export function presentScene(scene: RadianceScene, output: Output, options: Pres
     });
   } else {
     scene.effects.present.set({
-      present: { view: [0, 0, options.dpr ?? 1, options.intensidade] },
+      present: { view: [0, options.fundo ?? 1, options.dpr ?? 1, options.intensidade] },
       cascade_tex: scene.cascades[0],
       emitter_tex: scene.emitter[0],
       sdf_tex: scene.sdf,
