@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { GotaDeVidro } from './GotaDeVidro';
 import type { DadosLanding } from './tipos';
 
 type Props = Pick<DadosLanding, 'declaracao' | 'bio' | 'fatos' | 'stack' | 'extras' | 'cidade'>;
@@ -24,17 +25,21 @@ export function Sobre({ declaracao, bio, fatos, stack, extras, cidade }: Props) 
           <p className="rotulo m-0">{cidade}</p>
         </div>
 
-        <h2 className="declaracao mt-14 mb-16 max-w-[17ch] text-[clamp(2.4rem,1.2rem+4.6vw,5.6rem)] leading-[0.98] font-medium tracking-[-0.045em] lg:mt-20 lg:mb-24">
-          <span className="sr-only">{declaracao.replaceAll('*', '')}</span>
-          <span aria-hidden="true">
-            {lista.map(({ palavra, enfase, colada }, i) => (
-              <Fragment key={i}>
-                {i > 0 && !colada && ' '}
-                <span className={`pal ${enfase ? 'serif' : ''}`}>{palavra}</span>
-              </Fragment>
-            ))}
-          </span>
-        </h2>
+        {/* A declaração e, ao lado dela em telas largas, a gota de vidro */}
+        <div className="mt-14 mb-16 lg:mt-20 lg:mb-24 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10">
+          <h2 className="declaracao m-0 max-w-[17ch] text-[clamp(2.4rem,1.2rem+4vw,4.8rem)] leading-[0.98] font-medium tracking-[-0.045em] lg:col-span-8">
+            <span className="sr-only">{declaracao.replaceAll('*', '')}</span>
+            <span aria-hidden="true">
+              {lista.map(({ palavra, enfase, colada }, i) => (
+                <Fragment key={i}>
+                  {i > 0 && !colada && ' '}
+                  <span className={`pal ${enfase ? 'serif' : ''}`}>{palavra}</span>
+                </Fragment>
+              ))}
+            </span>
+          </h2>
+          <GotaDeVidro />
+        </div>
 
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-20">
           <div className="bio lg:col-span-7">

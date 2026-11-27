@@ -18,3 +18,9 @@ radiance-cascades/
 
 # Imagem de conferência da máscara do retrato
 tools/retrato/depuracao.png
+
+# Exemplo original do vgpu (Glass Sculpture), só como referência
+glass-sculpture/
+
+# Exemplo original do vgpu (Particles ocean / fft-ocean), só como referência
+fft-ocean/

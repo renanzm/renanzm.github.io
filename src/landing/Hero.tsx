@@ -15,52 +15,44 @@ interface Props {
   foto: Foto;
 }
 
-/** Liga os riscos de luz no fundo da abertura (WebGPU): arrastar o mouse no fundo risca uma
- * linha de luz que apaga sozinha. Só em navegador com WebGPU e sem "reduzir movimento"; sem eles,
- * o fundo fica preto como na foto. */
-function useRiscosDeLuz(
-  hero: React.RefObject<HTMLElement | null>,
-  luz: React.RefObject<HTMLCanvasElement | null>,
-  riscos: React.RefObject<HTMLCanvasElement | null>,
-) {
+/** Liga o oceano de partículas no fundo da abertura (WebGPU, adaptado do exemplo "Particles
+ * ocean" do vgpu; ver efeitos/oceano). Só em navegador com WebGPU e sem "reduzir movimento"; sem
+ * eles, o fundo fica preto como na foto. */
+function useOceano(oceano: React.RefObject<HTMLCanvasElement | null>) {
   useEffect(() => {
-    const area = hero.current;
-    const canvas = luz.current;
-    const tinta = riscos.current;
-    if (!area || !canvas || !tinta) return;
+    const canvas = oceano.current;
+    if (!canvas) return;
     if (!('gpu' in navigator) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let mounted = true;
     let dispose: (() => void) | undefined;
-    import('../efeitos/radiancia/riscos-de-luz')
-      .then(({ criarRiscosDeLuz }) => {
+    import('../efeitos/oceano/renderer')
+      .then(({ criarOceano }) => {
         if (!mounted) return;
-        const efeito = criarRiscosDeLuz({ canvas, tinta, area });
+        const efeito = criarOceano({ canvas });
         dispose = efeito.dispose;
-        return efeito.ready.then(() => mounted && area.classList.add('com-riscos'));
+        return efeito.ready.then(() => mounted && canvas.classList.add('pronto'));
       })
       .catch((cause: unknown) => {
-        if (mounted) console.warn('Riscos de luz indisponíveis; a abertura segue sem eles.', cause);
+        if (mounted) console.warn('Oceano do fundo indisponível; a abertura segue sem ele.', cause);
       });
     return () => {
       mounted = false;
-      area.classList.remove('com-riscos');
+      canvas.classList.remove('pronto');
       dispose?.();
     };
-  }, [hero, luz, riscos]);
+  }, [oceano]);
 }
 
 /** Abertura: o retrato e a assinatura, em camadas que se movem em velocidades diferentes na
- * rolagem. Atrás do busto recortado, o fundo onde o visitante risca luz. */
+ * rolagem. Atrás do busto recortado, o oceano de partículas. */
 export function Hero({ nome, cargo, empresa, cidade, chamada, foto }: Props) {
   const hero = useRef<HTMLElement>(null);
-  const luz = useRef<HTMLCanvasElement>(null);
-  const riscos = useRef<HTMLCanvasElement>(null);
-  useRiscosDeLuz(hero, luz, riscos);
+  const oceano = useRef<HTMLCanvasElement>(null);
+  useOceano(oceano);
 
   return (
     <section ref={hero} className="hero" id="inicio" aria-labelledby="hero-nome">
-      <canvas ref={luz} className="hero-camada hero-luz" aria-hidden="true" />
-      <canvas ref={riscos} className="hero-camada hero-riscos" aria-hidden="true" />
+      <canvas ref={oceano} className="hero-camada hero-oceano" aria-hidden="true" />
       <div className="hero-camada hero-foto">
         <div className="hero-camada hero-foto-intro">
           <div className="hero-busto">

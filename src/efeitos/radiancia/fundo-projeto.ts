@@ -162,7 +162,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     const previous = scene;
     if (disposed || !canvasSurface || !previous) return;
     try {
-      const next = createScene(previous.gpu, tamanhoDaCena(), 'pintura', 'fundo');
+      const next = createScene(previous.gpu, tamanhoDaCena());
       scene = next;
       destroyScene(previous);
       clearRequested = true;
@@ -264,7 +264,7 @@ export function criarFundoDeLuz({ canvas, tinta, cor }: Opcoes) {
     tinta.height = pixels[1];
     canvasSurface = surface(gpu, canvas, { autoResize: false, dpr: [1, 2] });
     canvasSurface.resize(pixels);
-    scene = createScene(gpu, tamanhoDaCena(), 'pintura', 'fundo');
+    scene = createScene(gpu, tamanhoDaCena());
     await prepareScene(scene, canvasSurface.format);
     if (disposed) return;
 

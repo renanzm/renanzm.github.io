@@ -61,7 +61,7 @@
 }
 /* Câmera um pouco recuada: a foto ocupa 94% da altura da tela, então o rosto fica menor. Ela
    começa abaixo do cabeçalho e vai até o pé da abertura: os ombros cobrem o fundo até embaixo e
-   a luz dos riscos não escapa por baixo do busto. Alinhada pelo topo (o 0% abaixo), a foto nunca
+   o fundo animado não escapa por baixo do busto. Alinhada pelo topo (o 0% abaixo), a foto nunca
    corta o cabelo, que quase encosta na borda de cima; o que sobra é cortado nos ombros */
 .hero-busto {
   position: absolute;
@@ -77,8 +77,8 @@
   object-fit: cover;
   object-position: 50% 0%;
 }
-/* O busto recortado (máscara gerada por tools/retrato/mascara.mjs): atrás dele, os riscos de luz.
-   A máscara usa o mesmo encaixe da foto (cover, 50% 0%) para coincidir com ela */
+/* O busto recortado (máscara gerada por tools/retrato/mascara.mjs): atrás dele, o oceano de
+   partículas. A máscara usa o mesmo encaixe da foto (cover, 50% 0%) para coincidir com ela */
 .hero-busto img,
 .hero-busto-brilho,
 .hero-busto .hero-gradiente {
@@ -127,27 +127,20 @@
   /* Fora do busto até a GSAP levar a faixa (e para sempre, com menos movimento) */
   transform: translateX(-250%) skewX(-12deg);
 }
-/* Riscos de luz atrás do busto (efeitos/radiancia/riscos-de-luz.ts): a luz em WebGPU e, por
-   cima, o risco nítido em canvas 2D (em screen, o preto do risco apagado não muda nada). Sem
-   WebGPU, os canvas ficam vazios e o fundo é o preto da própria abertura, igual à foto */
-.hero-luz,
-.hero-riscos {
+/* Oceano de partículas atrás do busto (efeitos/oceano). Sem WebGPU, o canvas fica vazio e o
+   fundo é o preto da própria abertura, igual à foto */
+.hero-oceano {
   display: block;
   width: 100%;
   height: 100%;
+  opacity: 0;
+  transition: opacity 2s var(--ease-suave);
 }
-.hero-riscos {
-  mix-blend-mode: screen;
-}
-/* Arrastar no fundo risca: a mira avisa; nos textos, o cursor de sempre */
-.hero.com-riscos {
-  cursor: crosshair;
-}
-.hero.com-riscos p {
-  cursor: auto;
+.hero-oceano.pronto {
+  opacity: 1;
 }
 /* Luz da cena sobre o busto: topo escuro, vinheta e o pé da foto dissolvendo no preto. Só no
-   busto (com a mesma máscara): os riscos de luz do fundo não escurecem */
+   busto (com a mesma máscara): o oceano do fundo não escurece */
 .hero-gradiente {
   pointer-events: none;
   background:
@@ -576,6 +569,26 @@
 }
 
 /* ------------------------------------------------------------------------------- sobre */
+/* Gota de vidro ao lado da declaração (efeitos/gota): o canvas é transparente onde não há vidro.
+   Arrastar com o mouse gira a gota */
+.gota {
+  aspect-ratio: 5 / 4;
+  user-select: none;
+}
+.gota canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 1.6s var(--ease-suave);
+}
+.gota canvas:active {
+  cursor: grabbing;
+}
+.gota canvas.pronto {
+  opacity: 1;
+}
 .declaracao .serif {
   font-size: 1.1em;
   line-height: 0.9;

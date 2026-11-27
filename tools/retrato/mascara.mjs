@@ -1,4 +1,4 @@
-/* Recorta o busto do retrato da abertura, para os riscos de luz do fundo aparecerem atrás dele.
+/* Recorta o busto do retrato da abertura, para o fundo animado aparecer atrás dele.
  *
  * O recorte vem de tools/retrato/busto.webp: o mesmo retrato (mesmo tamanho e enquadramento de
  * src/assets/hero/retrato.webp) com o fundo tirado num editor de imagem. Vale fundo transparente

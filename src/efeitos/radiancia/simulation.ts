@@ -6,19 +6,17 @@
  * jump flood, distância e cascatas estão sem mudanças.
  *
  * Diferente:
- *   - dois modos de emissor: "pintura" (o do exemplo: traços do cursor somados por max, mais o
- *     triângulo de luz, agora com centro e cor escolhidos pela página) e "imagem" (uma imagem
- *     enviada da página, como os riscos de luz da abertura, trocada a cada quadro);
- *   - dois modos de saída: "fundo" (o present do exemplo, com a grade nítida em px de CSS mesmo
- *     com a cena em resolução menor) e "luz" (só a luz que os emissores jogam em volta, sobre
- *     preto, com os riscos nítidos desenhados à parte pela página);
+ *   - o triângulo de luz tem centro, cor e raio escolhidos pela página (raio zero: sem ele), e os
+ *     traços também podem ter uma cor só e o raio que a página quiser;
+ *   - o present desenha a grade nítida em px de CSS mesmo com a cena em resolução menor, com o
+ *     brilho da grade separado do dos traços;
+ *   - a escala da cena segue a área da tela, com um teto (escalaDaCena);
  *   - sem os modos de depuração (emissores, distância, atlas) e o lil-gui do exemplo. */
 import {
   effect,
   frame,
   sampler,
   target,
-  texture,
   type Effect,
   type Gpu,
   type Surface,
@@ -26,10 +24,8 @@ import {
 } from 'vgpu';
 
 import type { PaintSegment } from './pintura';
-import emissorImagemWgsl from './emissor-imagem.wgsl';
 import jfaInitWgsl from './jfa-init.wgsl';
 import jfaPassWgsl from './jfa-pass.wgsl';
-import luzWgsl from './luz.wgsl';
 import paintEmitterWgsl from './paint-emitter.wgsl';
 import presentWgsl from './present.wgsl';
 import radianceCascadeWgsl from './radiance-cascade.wgsl';
@@ -38,9 +34,6 @@ import sdfFinalizeWgsl from './sdf-finalize.wgsl';
 type Output = Surface | Target;
 type Vec2 = readonly [number, number];
 type Vec3 = readonly [number, number, number];
-
-export type ModoEmissor = 'pintura' | 'imagem';
-export type ModoSaida = 'fundo' | 'luz';
 
 const HDR_FORMAT: GPUTextureFormat = 'rgba16float';
 // Seeds store absolute pixel coordinates, which need f32 precision past 2048.
@@ -66,7 +59,7 @@ export function strokeRadiance(index: number): Vec3 {
   return [channel(0), channel(2 / 3), channel(1 / 3)];
 }
 
-export function createScene(gpu: Gpu, requestedSize: Vec2, emissor: ModoEmissor, saida: ModoSaida) {
+export function createScene(gpu: Gpu, requestedSize: Vec2) {
   const width = Math.max(1, Math.floor(requestedSize[0]));
   const height = Math.max(1, Math.floor(requestedSize[1]));
   const size: Vec2 = [width, height];
@@ -99,19 +92,6 @@ export function createScene(gpu: Gpu, requestedSize: Vec2, emissor: ModoEmissor,
       own(target(gpu, { size: atlas, format: HDR_FORMAT })),
       own(target(gpu, { size: atlas, format: HDR_FORMAT })),
     ];
-    // No modo imagem, a página desenha os emissores num canvas 2D e envia para esta textura
-    const imagem =
-      emissor === 'imagem'
-        ? own(
-            texture(gpu, {
-              kind: '2d',
-              size,
-              format: 'rgba8unorm',
-              usage: ['texture_binding', 'copy_dst', 'render_attachment'],
-              label: 'emissores-da-imagem',
-            }),
-          )
-        : undefined;
     return {
       gpu,
       size,
@@ -122,16 +102,14 @@ export function createScene(gpu: Gpu, requestedSize: Vec2, emissor: ModoEmissor,
       jfa,
       sdf,
       cascades,
-      imagem,
-      modo: { emissor, saida },
       effects: {
-        emissor: emissor === 'imagem' ? effect(gpu, emissorImagemWgsl) : effect(gpu, paintEmitterWgsl),
+        emissor: effect(gpu, paintEmitterWgsl),
         jfaInit: effect(gpu, jfaInitWgsl),
         // Uniforms are uploaded immediately, so every encoded pass needs its own effect.
         jfaSteps: jumps.map(() => effect(gpu, jfaPassWgsl)),
         sdfFinalize: effect(gpu, sdfFinalizeWgsl),
         cascade: Array.from({ length: cascadeCount }, () => effect(gpu, radianceCascadeWgsl)),
-        present: saida === 'luz' ? effect(gpu, luzWgsl) : effect(gpu, presentWgsl),
+        present: effect(gpu, presentWgsl),
       },
       sampler: sampler(gpu, {
         minFilter: 'linear',
@@ -174,7 +152,7 @@ export function destroyScene(scene: RadianceScene): void {
     scene.effects.present,
   ];
   for (const shader of effects) shader.dispose();
-  destroyResources([...scene.emitter, ...scene.jfa, scene.sdf, ...scene.cascades, ...(scene.imagem ? [scene.imagem] : [])]);
+  destroyResources([...scene.emitter, ...scene.jfa, scene.sdf, ...scene.cascades]);
 }
 
 function destroyResources(resources: readonly object[]): void {
@@ -189,28 +167,16 @@ function destroyResources(resources: readonly object[]): void {
   if (firstError) throw firstError;
 }
 
-/** Envia o canvas 2D com os emissores (modo imagem). O canvas tem o tamanho da cena. */
-export function enviarImagem(scene: RadianceScene, origem: HTMLCanvasElement | OffscreenCanvas): void {
-  if (!scene.imagem) return;
-  scene.gpu.gpu.queue.copyExternalImageToTexture({ source: origem }, { texture: scene.imagem.gpu }, [
-    scene.size[0],
-    scene.size[1],
-  ]);
-}
-
 export interface ChainOptions {
-  /** Modo pintura: o trecho que o cursor acabou de pintar. */
+  /** O trecho que o cursor acabou de pintar. */
   readonly segment?: PaintSegment;
   readonly keepPrevious?: boolean;
-  /** Modo pintura: centro (px da cena), raio (px da cena) e radiância do triângulo de luz. */
+  /** Centro (px da cena), raio (px da cena) e radiância do triângulo de luz. */
   readonly triangulo?: { readonly centro: Vec2; readonly raio: number; readonly radiancia: Vec3 };
-  /** Modo pintura: cor (radiância) de todos os traços; sem ela, cada traço tem a sua, como no
-   * exemplo. */
+  /** Cor (radiância) de todos os traços; sem ela, cada traço tem a sua, como no exemplo. */
   readonly corTraco?: Vec3;
-  /** Modo pintura: raio do traço, em px da cena (o do exemplo é 5). */
+  /** Raio do traço, em px da cena (o do exemplo é 5). */
   readonly raioTraco?: number;
-  /** Modo imagem: radiância dos emissores da imagem. */
-  readonly radiancia?: Vec3;
 }
 
 function buildChain(scene: RadianceScene, options: ChainOptions) {
@@ -218,31 +184,26 @@ function buildChain(scene: RadianceScene, options: ChainOptions) {
   const passes: { readonly target: Target; readonly effect: Effect }[] = [];
 
   const [emitterRead, emitterWrite] = scene.emitter;
-  if (scene.modo.emissor === 'imagem') {
-    const [r, g, b] = options.radiancia ?? [3.8, 3.2, 2.4];
-    effects.emissor.set({ emissor: { radiance: [r, g, b, 1] }, imagem: scene.imagem! });
-  } else {
-    const segment = options.segment;
-    const color = options.corTraco ?? strokeRadiance(segment?.stroke ?? 0);
-    const triangulo = options.triangulo;
-    // O triângulo quente do exemplo, no centro, é o padrão
-    const [tr, tg, tb] = triangulo?.radiancia ?? [3.8, 3.2, 2.4];
-    effects.emissor.set({
-      paint: {
-        stroke_from: segment ? [segment.from[0] * size[0], segment.from[1] * size[1]] : [0, 0],
-        stroke_to: segment ? [segment.to[0] * size[0], segment.to[1] * size[1]] : [0, 0],
-        color: [color[0], color[1], color[2], segment ? 1 : 0],
-        flags: [
-          (options.keepPrevious ?? true) ? 1 : 0,
-          triangulo?.raio ?? Math.min(size[0], size[1]) * 0.11,
-          triangulo?.centro[0] ?? size[0] * 0.5,
-          triangulo?.centro[1] ?? size[1] * 0.5,
-        ],
-        triangle: [tr, tg, tb, options.raioTraco ?? 5],
-      },
-      previous: emitterRead,
-    });
-  }
+  const segment = options.segment;
+  const color = options.corTraco ?? strokeRadiance(segment?.stroke ?? 0);
+  const triangulo = options.triangulo;
+  // O triângulo quente do exemplo, no centro, é o padrão
+  const [tr, tg, tb] = triangulo?.radiancia ?? [3.8, 3.2, 2.4];
+  effects.emissor.set({
+    paint: {
+      stroke_from: segment ? [segment.from[0] * size[0], segment.from[1] * size[1]] : [0, 0],
+      stroke_to: segment ? [segment.to[0] * size[0], segment.to[1] * size[1]] : [0, 0],
+      color: [color[0], color[1], color[2], segment ? 1 : 0],
+      flags: [
+        (options.keepPrevious ?? true) ? 1 : 0,
+        triangulo?.raio ?? Math.min(size[0], size[1]) * 0.11,
+        triangulo?.centro[0] ?? size[0] * 0.5,
+        triangulo?.centro[1] ?? size[1] * 0.5,
+      ],
+      triangle: [tr, tg, tb, options.raioTraco ?? 5],
+    },
+    previous: emitterRead,
+  });
   passes.push({ target: emitterWrite, effect: effects.emissor });
   scene.emitter = [emitterWrite, emitterRead];
 
@@ -293,32 +254,19 @@ export function runChain(scene: RadianceScene, options: ChainOptions = {}): void
 export interface PresentOptions {
   /** Força da luz: 0 apaga, 1 é a do exemplo. */
   readonly intensidade: number;
-  /** Modo fundo: brilho da grade iluminada (1 é o do exemplo); os traços não mudam. */
+  /** Brilho da grade iluminada (1 é o do exemplo); os traços não mudam. */
   readonly fundo?: number;
-  /** Modo fundo: px de saída por px de CSS (o dpr da superfície), para a grade ficar nítida. */
+  /** Px de saída por px de CSS (o dpr da superfície), para a grade ficar nítida. */
   readonly dpr?: number;
-  /** Modo luz: exposição extra da luz (a "parede" é a página). */
-  readonly exposicao?: number;
-  /** Modo luz: distância (px da cena) em que a luz cai pela metade, longe do traço. */
-  readonly alcance?: number;
 }
 
 export function presentScene(scene: RadianceScene, output: Output, options: PresentOptions): void {
-  if (scene.modo.saida === 'luz') {
-    scene.effects.present.set({
-      luz: { params: [options.intensidade, options.exposicao ?? 1, options.alcance ?? 24, 0] },
-      cascade_tex: scene.cascades[0],
-      emitter_tex: scene.emitter[0],
-      sdf_tex: scene.sdf,
-    });
-  } else {
-    scene.effects.present.set({
-      present: { view: [0, options.fundo ?? 1, options.dpr ?? 1, options.intensidade] },
-      cascade_tex: scene.cascades[0],
-      emitter_tex: scene.emitter[0],
-      sdf_tex: scene.sdf,
-    });
-  }
+  scene.effects.present.set({
+    present: { view: [0, options.fundo ?? 1, options.dpr ?? 1, options.intensidade] },
+    cascade_tex: scene.cascades[0],
+    emitter_tex: scene.emitter[0],
+    sdf_tex: scene.sdf,
+  });
   frame(scene.gpu, (currentFrame) => {
     currentFrame.pass({ target: output, clear: [0, 0, 0, 1] }, (encoder) => encoder.draw(scene.effects.present));
   });

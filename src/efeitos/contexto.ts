@@ -1,5 +1,5 @@
-/* Um contexto de GPU (device) dividido pelos efeitos de luz do site: os riscos de luz da abertura
- * e o fundo de luz das páginas de projeto. Os exemplos do vgpu criam um
+/* Um contexto de GPU (device) dividido pelos efeitos do site: o oceano da abertura, a gota de
+ * vidro do "Sobre" e o fundo de luz das páginas de projeto. Os exemplos do vgpu criam um
  * contexto cada; aqui cada efeito reserva o mesmo e solta quando sai, e o último a sair o libera
  * (gpu.dispose(), como nos exemplos). O vgpu só é baixado quando o primeiro efeito pede a GPU. */
 import type { Gpu } from 'vgpu';

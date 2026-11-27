@@ -21,7 +21,7 @@ A página inicial é uma ilha React (`src/landing/`) dentro do Astro, estilizada
 
 - `src/landing/movimento/orquestrar.ts` decide o que anima, em que ordem e em quais telas. As curvas e durações usadas em todas as animações ficam em `ritmo.ts`.
 - Quem ativa "reduzir movimento" no sistema recebe a página estática, com tudo visível e os vídeos parados.
-- O retrato da abertura fica em `src/assets/hero/retrato.webp`. O busto é recortado dele por uma máscara, para os riscos de luz aparecerem atrás. O recorte vem de `tools/retrato/busto.webp`: o mesmo retrato, do mesmo tamanho, com o fundo tirado num editor de imagem (fundo transparente ou branco). Para ajustar o recorte, edite esse arquivo e gere a máscara de novo:
+- O retrato da abertura fica em `src/assets/hero/retrato.webp`. O busto é recortado dele por uma máscara, para o oceano de partículas do fundo aparecer atrás. O recorte vem de `tools/retrato/busto.webp`: o mesmo retrato, do mesmo tamanho, com o fundo tirado num editor de imagem (fundo transparente ou branco). Para ajustar o recorte, edite esse arquivo e gere a máscara de novo:
 
   ```powershell
   node tools/retrato/mascara.mjs --depurar
@@ -34,8 +34,9 @@ A página inicial é uma ilha React (`src/landing/`) dentro do Astro, estilizada
 
 Os efeitos abaixo são adaptados de exemplos do [vgpu](https://vgpu.sh) e só são baixados em navegadores com WebGPU. Sem WebGPU, eles simplesmente não aparecem: a abertura fica com o fundo preto, a moldura dos projetos fica com a luz em CSS e as páginas de projeto ficam com o fundo liso.
 
-- **Riscos de luz na abertura** (`src/efeitos/radiancia/riscos-de-luz.ts`, exemplo "Radiance Cascades"): arrastar o mouse no fundo, atrás do busto, risca uma linha que vira luz e ilumina a abertura em volta, com as sombras suaves que os riscos fazem uns nos outros. Cada risco fica aceso um pouco e apaga sozinho. Força, cor e alcance da luz: `EXPOSICAO`, `RADIANCIA` e `ALCANCE`; quanto o risco dura: `ACESO` e `APAGANDO`. Só com mouse ou caneta (no toque, arrastar continua rolando a página) e sem "reduzir movimento".
+- **Oceano no fundo da abertura** (`src/efeitos/oceano/`, exemplo "Particles ocean"): atrás do busto, um mar de partículas brancas sobre o preto, movido por uma FFT de verdade (um espectro de Phillips, 18 passes de FFT inversa em 512², meio milhão de partículas e bloom). Os parâmetros (vento, ondas, cor das partículas, bloom) ficam em `tuning.ts`, e a câmera em `camera.ts`, como no exemplo. O desenho para quando a abertura sai da tela. Não roda com "reduzir movimento".
 - **Fundo das páginas de projeto** (`src/efeitos/radiancia/fundo-projeto.ts`, mesmo exemplo): o fundo começa vazio e escuro; arrastar o mouse fora do texto pinta traços de luz na cor do projeto (campo `cor`), que iluminam a grade em volta. A luz é calculada na resolução da tela (em px de CSS, até 1920×1080; ver `escalaDaCena` em `simulation.ts`), e os traços são redesenhados nítidos por cima. Os textos ficam sobre seções escurecidas (a classe `escurecido` em `src/pages/projetos/[id].astro`), para a pintura não atrapalhar a leitura. Força da luz: `INTENSIDADE`; brilho da grade iluminada: `FUNDO`; espessura do traço: `RAIO_TRACO`.
+- **Gota de vidro no "Sobre"** (`src/efeitos/gota/`, exemplo "Glass Sculpture", com conceito e design visual de Kazuyuki Chinda): gotas d'água de vidro que se juntam e se separam, flutuando ao lado da declaração, com refração, reflexão interna, dispersão e bloom. A luz segue o cursor, e arrastar com o mouse gira a gota. Aparece só em telas largas e só é baixada quando a seção chega perto da tela; o desenho para quando ela sai da tela. A forma, o vidro e a luz ficam em `CONTROLES`, e a distância da câmera em `DISTANCIA`, em `renderer.ts`.
 - **Cartão holográfico** (`src/landing/holografico/`, exemplo "Holographic Card"): quando o cursor se aproxima da prévia de um app, aparece um foil holográfico: uma marca d'água de gravações onduladas no cartão inteiro, com luz perolada e difração onde o cursor passa. Também aparece na capa de cada página de projeto. Na página inicial, só é baixado quando um projeto chega perto da tela. Força: `INTENSITY` em `holografico.wgsl`.
 
 Depois de mexer num shader, valide num dispositivo WebGPU de verdade (o build só confere a sintaxe):
@@ -44,7 +45,7 @@ Depois de mexer num shader, valide num dispositivo WebGPU de verdade (o build s�
 npx vgpu check src/efeitos/radiancia/luz.wgsl --require-validation
 ```
 
-Os exemplos originais ficam em `radiance-cascades/` e `holographic-card/`, fora do Git, só como referência. No Windows, `npx vgpu examples pull` não funciona; use `npx vgpu examples show <exemplo>` para listar os arquivos e `npx vgpu examples cat <exemplo> <arquivo>` para baixar cada um.
+Os exemplos originais ficam em `radiance-cascades/`, `holographic-card/`, `glass-sculpture/` e `fft-ocean/`, fora do Git, só como referência. No Windows, `npx vgpu examples pull` não funciona; use `npx vgpu examples show <exemplo>` para listar os arquivos e `npx vgpu examples cat <exemplo> <arquivo>` para baixar cada um.
 
 ### Assinatura
 
