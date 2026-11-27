@@ -27,13 +27,14 @@ A página inicial é uma ilha React (`src/landing/`) dentro do Astro, estilizada
   node tools/retrato/mascara.mjs --depurar
   ```
 
-  O script grava em `public/hero/` a máscara do busto (`busto-mascara.webp`) e o halo escuro em volta dele (`busto-sombra.webp`). Com `--depurar`, grava também `tools/retrato/depuracao.png`, com o busto recortado sobre um fundo colorido. Ao trocar o retrato, troque também o `busto.webp`.
+  O script grava em `public/hero/` a máscara do busto (`busto-mascara.webp`), o halo escuro em volta dele (`busto-sombra.webp`) e o contorno que o flare acende (`busto-contorno.webp`). Com `--depurar`, grava também `tools/retrato/depuracao.png`, com o busto recortado sobre um fundo colorido. Ao trocar o retrato, troque também o `busto.webp`.
 - Ao abrir a página, um brilho atravessa o busto: a faixa `.hero-busto-faixa` de `landing.css`, levada pela linha do tempo de `movimento/abertura.ts`.
 
 ### Efeitos em WebGPU
 
 Os efeitos abaixo são adaptados de exemplos do [vgpu](https://vgpu.sh) e só são baixados em navegadores com WebGPU. Sem WebGPU, eles simplesmente não aparecem: a abertura fica com o fundo preto, a moldura dos projetos fica com a luz em CSS e as páginas de projeto ficam com o fundo liso.
 
+- **Flare na silhueta** (`src/efeitos/flare/`, exemplo "Next.js Flare"): uma luz azulada passeia em volta do rosto, acende o contorno do busto mais perto dela e espalha raios volumétricos; com o cursor na abertura, a luz segue o cursor. O contorno é `public/hero/busto-contorno.webp`, gerado pelo `tools/retrato/mascara.mjs` junto com as máscaras. O lugar do rosto, em volta do qual a luz passeia, é `FOCO_NA_FOTO` em `pipeline.ts`. Não roda com "reduzir movimento".
 - **Riscos de luz na abertura** (`src/efeitos/radiancia/riscos-de-luz.ts`, exemplo "Radiance Cascades"): arrastar o mouse no fundo, atrás do busto, risca uma linha que vira luz e ilumina a abertura em volta, com as sombras suaves que os riscos fazem uns nos outros. Cada risco fica aceso um pouco e apaga sozinho. Força, cor e alcance da luz: `EXPOSICAO`, `RADIANCIA` e `ALCANCE`; quanto o risco dura: `ACESO` e `APAGANDO`. Só com mouse ou caneta (no toque, arrastar continua rolando a página) e sem "reduzir movimento".
 - **Fundo das páginas de projeto** (`src/efeitos/radiancia/fundo-projeto.ts`, mesmo exemplo): uma grade escura iluminada por um triângulo de luz na cor do projeto (campo `cor`), no canto de cima. Arrastar o mouse fora do texto pinta mais luz. A luz é calculada na resolução da tela (em px de CSS, até 1920×1080; ver `escalaDaCena` em `simulation.ts`), e os traços e o triângulo são redesenhados nítidos por cima. Os textos ficam sobre seções escurecidas (a classe `escurecido` em `src/pages/projetos/[id].astro`), para a pintura não atrapalhar a leitura. Força da luz: `INTENSIDADE`; espessura do traço: `RAIO_TRACO`.
 - **Cartão holográfico** (`src/landing/holografico/`, exemplo "Holographic Card"): quando o cursor se aproxima da prévia de um app, aparece um foil holográfico: uma marca d'água de gravações onduladas no cartão inteiro, com luz perolada e difração onde o cursor passa. Também aparece na capa de cada página de projeto. Na página inicial, só é baixado quando um projeto chega perto da tela. Força: `INTENSITY` em `holografico.wgsl`.
@@ -44,7 +45,7 @@ Depois de mexer num shader, valide num dispositivo WebGPU de verdade (o build s�
 npx vgpu check src/efeitos/radiancia/luz.wgsl --require-validation
 ```
 
-Os exemplos originais ficam em `radiance-cascades/` e `holographic-card/`, fora do Git, só como referência. No Windows, `npx vgpu examples pull` não funciona; use `npx vgpu examples show <exemplo>` para listar os arquivos e `npx vgpu examples cat <exemplo> <arquivo>` para baixar cada um.
+Os exemplos originais ficam em `radiance-cascades/`, `holographic-card/` e `nextjs-flare/`, fora do Git, só como referência. No Windows, `npx vgpu examples pull` não funciona; use `npx vgpu examples show <exemplo>` para listar os arquivos e `npx vgpu examples cat <exemplo> <arquivo>` para baixar cada um.
 
 ### Assinatura
 

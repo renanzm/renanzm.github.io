@@ -49,13 +49,45 @@ function useRiscosDeLuz(
   }, [hero, luz, riscos]);
 }
 
+/** Liga o flare na silhueta (WebGPU, adaptado do exemplo "Next.js Flare" do vgpu): uma luz que
+ * passeia em volta do rosto, acende o contorno do busto e espalha raios; com o cursor na abertura,
+ * ela segue o cursor. Só em navegador com WebGPU e sem "reduzir movimento". */
+function useFlare(hero: React.RefObject<HTMLElement | null>, flare: React.RefObject<HTMLCanvasElement | null>) {
+  useEffect(() => {
+    const area = hero.current;
+    const canvas = flare.current;
+    if (!area || !canvas) return;
+    if (!('gpu' in navigator) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let mounted = true;
+    let dispose: (() => void) | undefined;
+    import('../efeitos/flare/renderer')
+      .then(({ criarFlare }) => {
+        if (!mounted) return;
+        const efeito = criarFlare({ canvas, area, contorno: '/hero/busto-contorno.webp' });
+        dispose = efeito.dispose;
+        return efeito.ready.then(() => mounted && canvas.classList.add('pronto'));
+      })
+      .catch((cause: unknown) => {
+        if (mounted) console.warn('Flare da silhueta indisponível; a abertura segue sem ele.', cause);
+      });
+    return () => {
+      mounted = false;
+      canvas.classList.remove('pronto');
+      dispose?.();
+    };
+  }, [hero, flare]);
+}
+
 /** Abertura: o retrato e a assinatura, em camadas que se movem em velocidades diferentes na
- * rolagem. Atrás do busto recortado, o fundo onde o visitante risca luz. */
+ * rolagem. Atrás do busto recortado, o fundo onde o visitante risca luz; em cima dele, o flare que
+ * acende o contorno da silhueta. */
 export function Hero({ nome, cargo, empresa, cidade, chamada, foto }: Props) {
   const hero = useRef<HTMLElement>(null);
   const luz = useRef<HTMLCanvasElement>(null);
   const riscos = useRef<HTMLCanvasElement>(null);
+  const flare = useRef<HTMLCanvasElement>(null);
   useRiscosDeLuz(hero, luz, riscos);
+  useFlare(hero, flare);
 
   return (
     <section ref={hero} className="hero" id="inicio" aria-labelledby="hero-nome">
@@ -82,6 +114,7 @@ export function Hero({ nome, cargo, empresa, cidade, chamada, foto }: Props) {
               <span className="hero-busto-faixa" />
             </div>
             <div className="hero-camada hero-gradiente" aria-hidden="true" />
+            <canvas ref={flare} className="hero-busto-flare" aria-hidden="true" />
           </div>
         </div>
       </div>

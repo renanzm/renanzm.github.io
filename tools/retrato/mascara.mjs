@@ -10,6 +10,8 @@
  *   busto-mascara.webp  máscara do busto (canal alfa), na proporção da foto
  *   busto-sombra.webp   a mesma silhueta, alargada e desfocada: o halo escuro que separa o
  *                       busto da luz do fundo
+ *   busto-contorno.webp o contorno do busto, uma linha branca fina no tamanho da foto: é o que o
+ *                       flare da abertura ilumina (ver src/efeitos/flare)
  *
  * Uso: node tools/retrato/mascara.mjs [--depurar]   (com --depurar, grava depuracao.png aqui) */
 import { mkdir } from 'node:fs/promises';
@@ -115,6 +117,23 @@ const halo = await sharp(Buffer.from(dilatar(m, 22).map((v) => v * 255)), { raw:
   .raw()
   .toBuffer();
 await comoAlfa(halo).webp({ quality: 80, alphaQuality: 80 }).toFile(PASTA + 'busto-sombra.webp');
+
+/* 4. O contorno, no tamanho cheio da foto: uma faixa de ~3 px onde o busto desfocado cruza a metade
+   (a borda da foto não conta: o desfoque estende a imagem, então ali não nasce linha) */
+const desfocado = await sharp(Buffer.from(busto), { raw: { width: GW, height: GH, channels: 1 } })
+  .blur(1.4)
+  .toColourspace('b-w')
+  .raw()
+  .toBuffer();
+const linha = Buffer.alloc(GW * GH * 4);
+for (let p = 0; p < GW * GH; p++) {
+  const v = Math.max(0, Math.min(1, 1 - Math.abs(desfocado[p] / 255 - 0.5) * 3.2));
+  linha[p * 4] = linha[p * 4 + 1] = linha[p * 4 + 2] = 255;
+  linha[p * 4 + 3] = Math.round(v * 255);
+}
+await sharp(linha, { raw: { width: GW, height: GH, channels: 4 } })
+  .webp({ quality: 90, alphaQuality: 95 })
+  .toFile(PASTA + 'busto-contorno.webp');
 console.log(`máscaras do busto (${W}×${H}) → ${PASTA}`);
 
 if (process.argv.includes('--depurar')) {
