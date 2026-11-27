@@ -39,6 +39,45 @@ const imagemAbs = imagem ? new URL(imagem, Astro.site).href : undefined;
     <script is:inline>
       document.documentElement.classList.add('js');
     </script>
+    <script is:inline>
+      // Logo depois de uma publicação, o navegador pode reaproveitar por até 10 minutos a página
+      // antiga (o GitHub Pages manda guardar por 600 s), que aponta para scripts que a publicação
+      // nova já trocou: a animação e os efeitos não carregam. Quando um script da página não existe
+      // mais, recarrega uma vez para buscar a página nova (no máximo uma vez por minuto).
+      (function () {
+        var CHAVE = 'recarregou-versao-nova';
+        function recarregar() {
+          var ultima = Number(sessionStorage.getItem(CHAVE)) || 0;
+          if (Date.now() - ultima < 60000) return;
+          sessionStorage.setItem(CHAVE, String(Date.now()));
+          location.reload();
+        }
+        // Os efeitos carregados sob demanda (import dinâmico do Vite)
+        addEventListener('vite:preloadError', function (e) {
+          e.preventDefault();
+          recarregar();
+        });
+        // Os scripts da página
+        addEventListener(
+          'error',
+          function (e) {
+            var t = e.target;
+            if (t && t.tagName === 'SCRIPT' && /\/_astro\//.test(t.src)) recarregar();
+          },
+          true,
+        );
+        // A ilha React da página inicial: o arquivo dela ainda existe?
+        addEventListener('DOMContentLoaded', function () {
+          var ilha = document.querySelector('astro-island[component-url]');
+          if (!ilha) return;
+          fetch(ilha.getAttribute('component-url'), { method: 'HEAD', cache: 'no-store' })
+            .then(function (r) {
+              if (r.status === 404) recarregar();
+            })
+            .catch(function () {});
+        });
+      })();
+    </script>
   </head>
   <body>
     <a href="#conteudo" class="pular">Pular para o conteúdo</a>
